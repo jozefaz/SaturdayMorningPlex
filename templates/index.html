@@ -228,6 +228,10 @@
                 <label for="tv-library">TV Library Name</label>
                 <input type="text" id="tv-library" value="{{ tv_library }}" 
                        placeholder="TV Shows">
+                <div class="help-text">
+                    For multiple libraries, use comma-separated names: "TV Shows,Anime,Cartoons"
+                </div>
+                <button onclick="loadLibraries()" class="secondary" style="margin-top: 10px;">Load Available Libraries</button>
             </div>
             
             <div class="form-group">
@@ -242,6 +246,15 @@
             <button onclick="testConnection()">Test Plex Connection</button>
             <button onclick="loadContentRatings()" class="secondary">Load Available Ratings</button>
         </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="result"></div>
 
         <!-- Actions Section -->
         <div class="section">
@@ -263,15 +276,6 @@
             <button onclick="deletePlaylists()" class="danger">Delete All Playlists</button>
         </div>
 
-        <!-- Loading Indicator -->
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Processing...</p>
-        </div>
-
-        <!-- Results Section -->
-        <div id="result"></div>
-
         <!-- Timestamp -->
         <div class="timestamp">Server Time: {{ timestamp }}</div>
     </div>
@@ -292,7 +296,8 @@
             try {
                 const response = await fetch('/api/plex/test', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
                 });
                 
                 const data = await response.json();
@@ -335,12 +340,45 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Get currently selected ratings
+                    const currentRatings = document.getElementById('content-ratings').value
+                        .split(',')
+                        .map(r => r.trim())
+                        .filter(r => r);
+                    
                     showResult(`
                         <div class="success-box">
                             <strong>Available Content Ratings:</strong><br>
                             ${data.ratings.join(', ')}
+                            <br><br>
+                            <button onclick="selectAllRatings()" 
+                                    style="margin: 10px 5px; padding: 10px 20px; font-size: 1em; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                Select All Ratings
+                            </button>
+                            <button onclick="clearAllRatings()" 
+                                    style="margin: 10px 5px; padding: 10px 20px; font-size: 1em; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                Clear All
+                            </button>
+                            <br>
+                            <strong>Click to toggle ratings:</strong><br>
+                            ${data.ratings.map(rating => {
+                                const isSelected = currentRatings.includes(rating);
+                                return `<button onclick="toggleRating('${rating.replace(/'/g, "\\\\'")}', this)"
+                                        style="margin: 5px; padding: 8px 15px; font-size: 0.9em; 
+                                               background: ${isSelected ? '#667eea' : '#e0e0e0'}; 
+                                               color: ${isSelected ? 'white' : '#333'};
+                                               border: 2px solid ${isSelected ? '#667eea' : '#ccc'};
+                                               border-radius: 5px; cursor: pointer; font-weight: ${isSelected ? 'bold' : 'normal'};">
+                                    ${rating} ${isSelected ? '✓' : ''}
+                                </button>`;
+                            }).join('')}
+                            <br><br>
+                            <em>Tip: Click ratings to add/remove them from the selection</em>
                         </div>
                     `);
+                    
+                    // Store ratings data for toggle function
+                    window.availableRatings = data.ratings;
                 } else {
                     showResult(`
                         <div class="error-box">
@@ -361,19 +399,251 @@
             }
         }
 
+        function toggleRating(rating, button) {
+            const input = document.getElementById('content-ratings');
+            const currentRatings = input.value
+                .split(',')
+                .map(r => r.trim())
+                .filter(r => r);
+            
+            const index = currentRatings.indexOf(rating);
+            
+            if (index > -1) {
+                // Remove rating
+                currentRatings.splice(index, 1);
+                button.style.background = '#e0e0e0';
+                button.style.color = '#333';
+                button.style.border = '2px solid #ccc';
+                button.style.fontWeight = 'normal';
+                button.innerHTML = rating;
+            } else {
+                // Add rating
+                currentRatings.push(rating);
+                button.style.background = '#667eea';
+                button.style.color = 'white';
+                button.style.border = '2px solid #667eea';
+                button.style.fontWeight = 'bold';
+                button.innerHTML = rating + ' ✓';
+            }
+            
+            input.value = currentRatings.join(', ');
+            
+            // Don't close the selection - just update the summary below
+            updateRatingSummary(currentRatings);
+        }
+
+        function updateRatingSummary(currentRatings) {
+            // Find or create a summary element within the result box
+            const resultDiv = document.getElementById('result');
+            const summaryDiv = resultDiv.querySelector('.rating-summary') || document.createElement('div');
+            summaryDiv.className = 'rating-summary';
+            summaryDiv.innerHTML = `
+                <div style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px; border-left: 4px solid #667eea;">
+                    <strong>Current Selection:</strong> ${currentRatings.length > 0 ? currentRatings.join(', ') : 'None selected'}
+                </div>
+            `;
+            
+            // Append if it doesn't exist
+            if (!resultDiv.querySelector('.rating-summary')) {
+                resultDiv.querySelector('.success-box').appendChild(summaryDiv);
+            }
+        }
+
+        function selectAllRatings() {
+            if (!window.availableRatings || window.availableRatings.length === 0) {
+                return;
+            }
+            
+            const input = document.getElementById('content-ratings');
+            input.value = window.availableRatings.join(', ');
+            
+            // Update button states without reloading
+            const buttons = document.querySelectorAll('#result button[onclick^="toggleRating"]');
+            buttons.forEach(btn => {
+                const rating = btn.onclick.toString().match(/'([^']+)'/)[1];
+                if (window.availableRatings.includes(rating)) {
+                    btn.style.background = '#667eea';
+                    btn.style.color = 'white';
+                    btn.style.border = '2px solid #667eea';
+                    btn.style.fontWeight = 'bold';
+                    btn.innerHTML = rating + ' ✓';
+                }
+            });
+            
+            updateRatingSummary(window.availableRatings);
+        }
+
+        function clearAllRatings() {
+            const input = document.getElementById('content-ratings');
+            input.value = '';
+            
+            // Update button states without reloading
+            const buttons = document.querySelectorAll('#result button[onclick^="toggleRating"]');
+            buttons.forEach(btn => {
+                const rating = btn.onclick.toString().match(/'([^']+)'/)[1];
+                btn.style.background = '#e0e0e0';
+                btn.style.color = '#333';
+                btn.style.border = '2px solid #ccc';
+                btn.style.fontWeight = 'normal';
+                btn.innerHTML = rating;
+            });
+            
+            updateRatingSummary([]);
+        }
+
+        async function loadLibraries() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/plex/libraries');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const tvLibraries = data.libraries.filter(lib => lib.type === 'show');
+                    const movieLibraries = data.libraries.filter(lib => lib.type === 'movie');
+                    
+                    if (tvLibraries.length === 0) {
+                        showResult(`
+                            <div class="error-box">
+                                <strong>✗ No TV Libraries Found</strong><br>
+                                No TV show libraries found on your Plex server.
+                            </div>
+                        `);
+                        return;
+                    }
+                    
+                    showResult(`
+                        <div class="success-box">
+                            <strong>Available TV Libraries:</strong><br>
+                            ${tvLibraries.map(lib => lib.title).join(', ')}
+                            <br><br>
+                            <button onclick="selectAllLibraries()" 
+                                    style="margin: 10px 5px; padding: 10px 20px; font-size: 1em; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                                Select All TV Libraries
+                            </button>
+                            <br>
+                            <strong>Or click individual libraries:</strong><br>
+                            ${tvLibraries.map(lib => 
+                                `<button onclick="selectLibrary('${lib.title.replace(/'/g, "\\'")}')"
+                                        style="margin: 5px; padding: 8px 15px; font-size: 0.9em;">
+                                    ${lib.title}
+                                </button>`
+                            ).join('')}
+                            <br><br>
+                            <em>Tip: For multiple libraries, manually edit the field with comma-separated names</em>
+                            ${movieLibraries.length > 0 ? '<br><br><strong>Movie Libraries (not yet supported):</strong><br>' + movieLibraries.map(lib => lib.title).join(', ') : ''}
+                        </div>
+                    `);
+                    
+                    // Store library data for selectAllLibraries function
+                    window.availableTVLibraries = tvLibraries.map(lib => lib.title);
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Failed to load libraries</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function selectLibrary(libraryName) {
+            const input = document.getElementById('tv-library');
+            const currentValue = input.value.trim();
+            
+            if (!currentValue) {
+                // If empty, just set the library name
+                input.value = libraryName;
+            } else {
+                // If already has values, append with comma
+                const currentLibraries = currentValue.split(',').map(s => s.trim());
+                if (!currentLibraries.includes(libraryName)) {
+                    input.value = currentValue + ', ' + libraryName;
+                }
+            }
+            
+            showResult(`
+                <div class="info-box">
+                    <strong>Library selected:</strong> ${libraryName}<br>
+                    Current value: ${input.value}
+                </div>
+            `);
+        }
+
+        function selectAllLibraries() {
+            if (!window.availableTVLibraries || window.availableTVLibraries.length === 0) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ No libraries available</strong><br>
+                        Please click "Load Available Libraries" first.
+                    </div>
+                `);
+                return;
+            }
+            
+            const input = document.getElementById('tv-library');
+            input.value = window.availableTVLibraries.join(', ');
+            
+            showResult(`
+                <div class="success-box">
+                    <strong>✓ All TV libraries selected!</strong><br>
+                    Selected ${window.availableTVLibraries.length} libraries:<br>
+                    ${window.availableTVLibraries.join(', ')}
+                </div>
+            `);
+        }
+
         async function generatePlaylists() {
             if (!confirm('This will create new playlists in your Plex server. Continue?')) {
                 return;
             }
             
             showLoading(true);
-            showResult('');
+            showResult('<div class="info-box"><strong>⏳ Validating content ratings...</strong><br>Please wait...</div>');
             
             const contentRatings = document.getElementById('content-ratings').value;
             const tvLibrary = document.getElementById('tv-library').value;
             const playlistPrefix = document.getElementById('playlist-prefix').value;
             
             try {
+                // Step 1: Validate content ratings
+                const validationResponse = await fetch('/api/plex/validate-ratings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content_ratings: contentRatings,
+                        tv_library: tvLibrary
+                    })
+                });
+                
+                const validationData = await validationResponse.json();
+                
+                if (!validationData.success || !validationData.valid) {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Invalid Content Ratings</strong><br>
+                            ${validationData.error}<br><br>
+                            <strong>Available ratings in '${tvLibrary}':</strong><br>
+                            ${validationData.available_ratings ? validationData.available_ratings.join(', ') : 'None'}
+                        </div>
+                    `);
+                    showLoading(false);
+                    return;
+                }
+                
+                // Step 2: Generate playlists
+                showResult('<div class="info-box"><strong>⏳ Generating playlists...</strong><br>This may take several minutes depending on your library size. Please wait...</div>');
+                
                 const response = await fetch('/api/playlists/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

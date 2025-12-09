@@ -2,9 +2,13 @@
 Plex connection and authentication module for SaturdayMorningPlex
 """
 import logging
+import urllib3
 from plexapi.server import PlexServer
 from plexapi.myplex import MyPlexAccount
 from plexapi.exceptions import BadRequest, Unauthorized
+
+# Disable SSL warnings for self-signed certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +50,15 @@ class PlexConnection:
             # Method 1: Direct connection with baseurl and token
             if self.baseurl and self.token:
                 logger.info(f"Connecting to Plex server at {self.baseurl}")
-                self.plex = PlexServer(self.baseurl, self.token)
+                # Create session with SSL verification disabled for local HTTPS connections
+                session = None
+                if self.baseurl.startswith('https://'):
+                    import requests
+                    session = requests.Session()
+                    session.verify = False
+                    logger.debug("SSL verification disabled for HTTPS connection")
+                
+                self.plex = PlexServer(self.baseurl, self.token, session=session)
                 logger.info(f"Connected to Plex server: {self.plex.friendlyName}")
                 return self.plex
             

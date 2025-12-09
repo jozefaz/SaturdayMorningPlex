@@ -52,30 +52,143 @@ class PlaylistGenerator:
     
     def get_all_episodes(self, shows):
         """
-        Get all episodes from the shows, organized by show
+        Get all episodes from the shows, organized by show.
+        Deduplicates episodes across libraries by selecting highest quality version.
         
         Args:
-            shows: List of Show objects
+            shows: List of Show objects (may contain duplicates from multiple libraries)
         
         Returns:
             dict: {show_title: [episodes_in_order]}
         """
-        show_episodes = {}
-        total_episodes = 0
+        import random
+        
+        # First pass: collect all episodes with quality metrics
+        # Key format: "ShowTitle|S01E01"
+        episode_candidates = {}  # {episode_key: [episode_objects]}
         
         for show in shows:
             try:
-                # Get all episodes for this show (in order)
                 episodes = show.episodes()
-                if episodes:
-                    show_episodes[show.title] = episodes
-                    total_episodes += len(episodes)
-                    logger.info(f"{show.title}: {len(episodes)} episodes")
+                if not episodes:
+                    continue
+                    
+                for episode in episodes:
+                    # Create unique key for this episode
+                    season = f"S{episode.parentIndex:02d}" if episode.parentIndex else "S00"
+                    ep_num = f"E{episode.index:02d}" if episode.index else "E00"
+                    episode_key = f"{show.title}|{season}{ep_num}"
+                    
+                    if episode_key not in episode_candidates:
+                        episode_candidates[episode_key] = []
+                    episode_candidates[episode_key].append(episode)
+                    
             except Exception as e:
                 logger.error(f"Error fetching episodes for {show.title}: {e}")
         
+        # Second pass: select best quality version of each episode
+        show_episodes = {}
+        total_episodes = 0
+        deduplication_stats = {'total_candidates': 0, 'duplicates_found': 0, 'selected': 0}
+        
+        for episode_key, candidates in episode_candidates.items():
+            deduplication_stats['total_candidates'] += len(candidates)
+            
+            if len(candidates) > 1:
+                deduplication_stats['duplicates_found'] += 1
+                logger.debug(f"Found {len(candidates)} versions of {episode_key}")
+            
+            # Select best quality episode
+            best_episode = self._select_best_episode(candidates)
+            deduplication_stats['selected'] += 1
+            
+            # Extract show title from key
+            show_title = episode_key.split('|')[0]
+            
+            if show_title not in show_episodes:
+                show_episodes[show_title] = []
+            show_episodes[show_title].append(best_episode)
+        
+        # Sort episodes by air date within each show
+        for show_title in show_episodes:
+            show_episodes[show_title] = sorted(
+                show_episodes[show_title],
+                key=lambda ep: ep.originallyAvailableAt if ep.originallyAvailableAt else ep.addedAt
+            )
+            total_episodes += len(show_episodes[show_title])
+            logger.info(f"{show_title}: {len(show_episodes[show_title])} episodes")
+        
         logger.info(f"Total episodes collected: {total_episodes}")
+        logger.info(f"Deduplication: {deduplication_stats['total_candidates']} candidates, "
+                   f"{deduplication_stats['duplicates_found']} duplicates found, "
+                   f"{deduplication_stats['selected']} unique episodes selected")
+        
         return show_episodes
+    
+    def _select_best_episode(self, candidates):
+        """
+        Select the best quality episode from multiple candidates.
+        Priority: Highest bitrate > Largest filesize > Random
+        
+        Args:
+            candidates: List of Episode objects
+        
+        Returns:
+            Episode: The best quality episode
+        """
+        import random
+        
+        if len(candidates) == 1:
+            return candidates[0]
+        
+        # Get quality metrics for each candidate
+        candidates_with_metrics = []
+        for ep in candidates:
+            try:
+                # Get media info
+                media = ep.media[0] if ep.media else None
+                bitrate = media.bitrate if media and hasattr(media, 'bitrate') else 0
+                
+                # Get file size
+                parts = media.parts if media and hasattr(media, 'parts') else []
+                filesize = parts[0].size if parts and hasattr(parts[0], 'size') else 0
+                
+                candidates_with_metrics.append({
+                    'episode': ep,
+                    'bitrate': bitrate or 0,
+                    'filesize': filesize or 0
+                })
+                
+                logger.debug(f"  {ep.grandparentTitle} {ep.seasonEpisode}: "
+                           f"bitrate={bitrate}, size={filesize}")
+            except Exception as e:
+                logger.warning(f"Error getting metrics for episode: {e}")
+                candidates_with_metrics.append({
+                    'episode': ep,
+                    'bitrate': 0,
+                    'filesize': 0
+                })
+        
+        # Sort by bitrate (descending), then filesize (descending)
+        candidates_with_metrics.sort(
+            key=lambda x: (x['bitrate'], x['filesize']),
+            reverse=True
+        )
+        
+        # Check if top candidates have same quality
+        best = candidates_with_metrics[0]
+        ties = [c for c in candidates_with_metrics 
+                if c['bitrate'] == best['bitrate'] and c['filesize'] == best['filesize']]
+        
+        if len(ties) > 1:
+            logger.debug(f"  Quality tie between {len(ties)} versions, selecting randomly")
+            selected = random.choice(ties)
+        else:
+            selected = best
+            logger.debug(f"  Selected version: bitrate={selected['bitrate']}, "
+                       f"size={selected['filesize']}")
+        
+        return selected['episode']
     
     def distribute_episodes_to_weeks(self, show_episodes, weeks_per_year=52):
         """
@@ -125,7 +238,11 @@ class PlaylistGenerator:
                     # This show has no more episodes
                     active_shows.discard(show_title)
             
+            # Sort week episodes by air date (oldest first)
             if week_episodes:
+                week_episodes.sort(
+                    key=lambda ep: ep['episode'].originallyAvailableAt if ep['episode'].originallyAvailableAt else ep['episode'].addedAt
+                )
                 yearly_playlists[year][week] = week_episodes
                 logger.debug(f"Year {year}, Week {week}: {len(week_episodes)} episodes")
             
@@ -170,11 +287,25 @@ class PlaylistGenerator:
                 try:
                     # Check if playlist already exists
                     existing = None
+                    should_replace = False
                     try:
                         existing = self.plex.playlist(playlist_title)
-                        logger.info(f"Playlist '{playlist_title}' already exists, deleting...")
-                        existing.delete()
+                        existing_count = len(existing.items())
+                        expected_count = len(episodes)
+                        
+                        if existing_count != expected_count:
+                            logger.warning(f"Playlist '{playlist_title}' exists but is incomplete: "
+                                         f"{existing_count} episodes (expected {expected_count})")
+                            should_replace = True
+                        else:
+                            logger.info(f"Playlist '{playlist_title}' already exists with correct episode count ({existing_count})")
+                            should_replace = True  # Replace anyway to ensure fresh content
+                        
+                        if should_replace:
+                            logger.info(f"Deleting existing playlist '{playlist_title}'...")
+                            existing.delete()
                     except:
+                        # Playlist doesn't exist, which is fine
                         pass
                     
                     # Create new playlist
@@ -201,7 +332,7 @@ class PlaylistGenerator:
         Complete workflow: filter shows, distribute episodes, create playlists
         
         Args:
-            tv_section_name: Name of TV library section
+            tv_section_name: Name of TV library section (string) or list of library names
             content_ratings: List of content ratings (e.g., ['G', 'PG'])
             playlist_prefix: Prefix for playlist names
             weeks_per_year: Number of weeks per year
@@ -218,14 +349,22 @@ class PlaylistGenerator:
         logger.info("="*60)
         
         try:
-            # Get TV section
-            logger.debug(f"Fetching TV section: {tv_section_name}")
-            tv_section = self.plex.library.section(tv_section_name)
+            # Support both single library and multiple libraries
+            if isinstance(tv_section_name, str):
+                library_names = [tv_section_name]
+            else:
+                library_names = tv_section_name
             
-            # Filter shows by content rating
-            shows = self.get_filtered_shows(tv_section, content_ratings)
+            # Collect shows from all libraries
+            all_shows = []
+            for lib_name in library_names:
+                logger.debug(f"Fetching TV section: {lib_name}")
+                tv_section = self.plex.library.section(lib_name)
+                shows = self.get_filtered_shows(tv_section, content_ratings)
+                all_shows.extend(shows)
+                logger.info(f"Found {len(shows)} shows in '{lib_name}'")
             
-            if not shows:
+            if not all_shows:
                 logger.warning("No shows found matching criteria!")
                 return {
                     'success': False,
@@ -234,7 +373,7 @@ class PlaylistGenerator:
             
             # Get all episodes
             logger.info("Collecting episodes from shows...")
-            show_episodes = self.get_all_episodes(shows)
+            show_episodes = self.get_all_episodes(all_shows)
             
             if not show_episodes:
                 logger.error("No episodes found in selected shows")

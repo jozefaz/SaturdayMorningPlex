@@ -255,6 +255,66 @@ def get_content_ratings():
             'error': str(e)
         }), 400
 
+@app.route('/api/plex/validate-ratings', methods=['POST'])
+def validate_content_ratings():
+    """Validate that selected content ratings exist in the library"""
+    logger.info("Validating content ratings")
+    try:
+        data = request.get_json() or {}
+        content_ratings = data.get('content_ratings', [])
+        if isinstance(content_ratings, str):
+            content_ratings = [r.strip() for r in content_ratings.split(',') if r.strip()]
+        
+        tv_library = data.get('tv_library', TV_LIBRARY_NAME)
+        
+        global plex_conn
+        if not plex_conn:
+            logger.debug("Initializing new Plex connection")
+            plex_conn = PlexConnection(
+                baseurl=PLEX_URL if PLEX_URL else None,
+                token=PLEX_TOKEN if PLEX_TOKEN else None,
+                username=PLEX_USERNAME if PLEX_USERNAME else None,
+                password=PLEX_PASSWORD if PLEX_PASSWORD else None,
+                servername=PLEX_SERVER_NAME if PLEX_SERVER_NAME else None
+            )
+            plex_conn.connect()
+        
+        logger.debug(f"Fetching TV section: {tv_library}")
+        tv_section = plex_conn.get_tv_section(tv_library)
+        
+        # Get all unique content ratings in library
+        library_ratings = set()
+        for show in tv_section.all():
+            if show.contentRating:
+                library_ratings.add(show.contentRating)
+        
+        # Check which selected ratings are missing
+        missing_ratings = [r for r in content_ratings if r not in library_ratings]
+        
+        if missing_ratings:
+            logger.warning(f"Selected ratings not found in library: {missing_ratings}")
+            return jsonify({
+                'success': False,
+                'valid': False,
+                'missing_ratings': missing_ratings,
+                'available_ratings': sorted(list(library_ratings)),
+                'error': f"The following content ratings are not found in '{tv_library}': {', '.join(missing_ratings)}"
+            })
+        
+        logger.info(f"All selected ratings are valid: {content_ratings}")
+        return jsonify({
+            'success': True,
+            'valid': True,
+            'selected_ratings': content_ratings,
+            'available_ratings': sorted(list(library_ratings))
+        })
+    except Exception as e:
+        logger.error(f"Failed to validate content ratings: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
 @app.route('/api/playlists/generate', methods=['POST'])
 def generate_playlists():
     """Generate Saturday Morning playlists"""
@@ -268,10 +328,16 @@ def generate_playlists():
             content_ratings = [r.strip() for r in content_ratings.split(',') if r.strip()]
         
         tv_library = data.get('tv_library', TV_LIBRARY_NAME)
+        # Support comma-separated library names
+        if isinstance(tv_library, str):
+            tv_libraries = [lib.strip() for lib in tv_library.split(',') if lib.strip()]
+        else:
+            tv_libraries = tv_library if isinstance(tv_library, list) else [tv_library]
+        
         playlist_prefix = data.get('playlist_prefix', 'Saturday Morning')
         weeks_per_year = int(data.get('weeks_per_year', 52))
         
-        logger.info(f"Generation parameters: library={tv_library}, ratings={content_ratings}, "
+        logger.info(f"Generation parameters: libraries={tv_libraries}, ratings={content_ratings}, "
                    f"prefix='{playlist_prefix}', weeks={weeks_per_year}")
         
         # Initialize connection if needed
@@ -287,11 +353,53 @@ def generate_playlists():
             )
             plex_conn.connect()
         
+        # Validate content ratings exist in library/libraries
+        logger.info("Validating content ratings against library...")
+        all_library_ratings = set()
+        
+        for lib_name in tv_libraries:
+            try:
+                tv_section = plex_conn.get_tv_section(lib_name)
+                for show in tv_section.all():
+                    if show.contentRating:
+                        all_library_ratings.add(show.contentRating)
+            except Exception as e:
+                logger.error(f"Failed to access library '{lib_name}': {e}")
+                return jsonify({
+                    'success': False,
+                    'error': f"Library '{lib_name}' not found or inaccessible"
+                }), 400
+        
+        missing_ratings = [r for r in content_ratings if r not in all_library_ratings]
+        if missing_ratings:
+            error_msg = f"Content ratings not found in libraries {tv_libraries}: {', '.join(missing_ratings)}. Available: {', '.join(sorted(all_library_ratings))}"
+            logger.error(error_msg)
+            return jsonify({
+                'success': False,
+                'error': error_msg,
+                'missing_ratings': missing_ratings,
+                'available_ratings': sorted(list(all_library_ratings))
+            }), 400
+        
+        logger.info("Content ratings validated successfully")
+        
+        # Continue with existing connection
+        if not plex_conn:
+            logger.debug("Initializing new Plex connection")
+            plex_conn = PlexConnection(
+                baseurl=PLEX_URL if PLEX_URL else None,
+                token=PLEX_TOKEN if PLEX_TOKEN else None,
+                username=PLEX_USERNAME if PLEX_USERNAME else None,
+                password=PLEX_PASSWORD if PLEX_PASSWORD else None,
+                servername=PLEX_SERVER_NAME if PLEX_SERVER_NAME else None
+            )
+            plex_conn.connect()
+        
         # Generate playlists
         logger.info("Initializing PlaylistGenerator")
         generator = PlaylistGenerator(plex_conn)
         result = generator.generate_all_playlists(
-            tv_section_name=tv_library,
+            tv_section_name=tv_libraries,  # Now supports list of library names
             content_ratings=content_ratings,
             playlist_prefix=playlist_prefix,
             weeks_per_year=weeks_per_year
