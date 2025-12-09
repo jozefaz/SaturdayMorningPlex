@@ -6,24 +6,24 @@ services:
     container_name: saturdaymorningplex
     image: saturdaymorningplex:latest
     ports:
-      - "5000:5000"
+      - "${APP_PORT:-5000}:5000"
     environment:
-      - APP_PORT=5000
-      - APP_HOST=0.0.0.0
-      - TZ=America/New_York
+      - APP_PORT=${APP_PORT:-5000}
+      - APP_HOST=${APP_HOST:-0.0.0.0}
+      - TZ=${TZ:-America/New_York}
       # Plex Configuration - Option 1: Direct connection
-      - PLEX_URL=http://YOUR_PLEX_SERVER:32400
-      - PLEX_TOKEN=YOUR_PLEX_TOKEN
-      # Plex Configuration - Option 2: MyPlex account
-      # - PLEX_USERNAME=your_email@example.com
-      # - PLEX_PASSWORD=your_password
-      # - PLEX_SERVER_NAME=Your Server Name
+      - PLEX_URL=${PLEX_URL}
+      - PLEX_TOKEN=${PLEX_TOKEN}
+      # Plex Configuration - Option 2: MyPlex account (optional)
+      - PLEX_USERNAME=${PLEX_USERNAME:-}
+      - PLEX_PASSWORD=${PLEX_PASSWORD:-}
+      - PLEX_SERVER_NAME=${PLEX_SERVER_NAME:-}
       # Application Settings
-      - TV_LIBRARY_NAME=TV Shows
-      - CONTENT_RATINGS=G,PG
+      - TV_LIBRARY_NAME=${TV_LIBRARY_NAME:-TV Shows}
+      - CONTENT_RATINGS=${CONTENT_RATINGS:-G,PG}
       # Logging Configuration
-      - LOG_LEVEL=INFO  # Options: DEBUG, INFO, WARNING, ERROR
-      - LOG_DIR=/config/logs
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - LOG_DIR=${LOG_DIR:-/config/logs}
     volumes:
       - ./config:/config  # Persistent storage for logs
     restart: unless-stopped

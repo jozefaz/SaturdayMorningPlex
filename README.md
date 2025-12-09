@@ -53,13 +53,32 @@ Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
    cd SaturdayMorningPlex
    ```
 
-2. **Edit docker-compose.yml** and configure your Plex settings:
+2. **Configure your settings** (choose one method):
+
+   **Method A: Using .env file (Recommended for local dev/testing)**
+   ```bash
+   # Copy the example file
+   cp .env.example .env
+   
+   # Edit .env with your settings
+   nano .env  # or use your preferred editor
+   ```
+   
+   Update these values in `.env`:
+   ```bash
+   PLEX_URL=http://192.168.1.100:32400  # Your Plex server URL
+   PLEX_TOKEN=your_token_here            # Your Plex token
+   TV_LIBRARY_NAME=TV Shows              # Your TV library name
+   CONTENT_RATINGS=G,PG                  # Desired content ratings
+   ```
+
+   **Method B: Edit docker-compose.yml directly**
    ```yaml
    environment:
-     - PLEX_URL=http://192.168.1.100:32400  # Your Plex server URL
-     - PLEX_TOKEN=your_token_here            # Your Plex token
-     - TV_LIBRARY_NAME=TV Shows              # Your TV library name
-     - CONTENT_RATINGS=G,PG                  # Desired content ratings
+     - PLEX_URL=http://192.168.1.100:32400
+     - PLEX_TOKEN=your_token_here
+     - TV_LIBRARY_NAME=TV Shows
+     - CONTENT_RATINGS=G,PG
    ```
 
 3. **Start the container**
@@ -75,6 +94,22 @@ Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
 See [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md) for detailed UnRAID installation instructions.
 
 ## 🔧 Configuration
+
+### Using .env File (Recommended)
+
+The `.env` file stores your configuration persistently - similar to how UnRAID saves container settings. This file is git-ignored, so your credentials stay private.
+
+**Setup:**
+```bash
+cp .env.example .env
+# Edit .env with your actual values
+```
+
+**Benefits:**
+- ✅ Settings persist across restarts
+- ✅ No need to edit docker-compose.yml
+- ✅ Safe for version control (git-ignored)
+- ✅ Easy to manage multiple environments
 
 ### Environment Variables
 
