@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>SaturdayMorningPlex</Name>
+  <Repository>yourdockerhub/saturdaymorningplex</Repository>
+  <Registry>https://hub.docker.com/r/yourdockerhub/saturdaymorningplex/</Registry>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/yourusername/SaturdayMorningPlex/issues</Support>
+  <Project>https://github.com/yourusername/SaturdayMorningPlex</Project>
+  <Overview>SaturdayMorningPlex is a containerized web application designed for UnRAID. This is a template application that can be customized for your specific needs.</Overview>
+  <Category>Tools: Status:Stable</Category>
+  <WebUI>http://[IP]:[PORT:5000]</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/yourusername/SaturdayMorningPlex/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/yourusername/SaturdayMorningPlex/main/icon.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled></DateInstalled>
+  <DonateText>Support the developer</DonateText>
+  <DonateLink>https://www.paypal.com/</DonateLink>
+  <Requires/>
+  <Config Name="WebUI Port" Target="5000" Default="5000" Mode="tcp" Description="Port for accessing the web interface" Type="Port" Display="always" Required="true" Mask="false">5000</Config>
+  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g., America/New_York, Europe/London)" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
+  <Config Name="App Port" Target="APP_PORT" Default="5000" Mode="" Description="Internal application port (usually leave as 5000)" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
+  <Config Name="App Host" Target="APP_HOST" Default="0.0.0.0" Mode="" Description="Application host binding (leave as 0.0.0.0)" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
+  <!-- Uncomment to add data persistence -->
+  <!--
+  <Config Name="AppData" Target="/app/data" Default="/mnt/user/appdata/saturdaymorningplex/data" Mode="rw" Description="Application data storage" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/saturdaymorningplex/data</Config>
+  <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/saturdaymorningplex/config" Mode="rw" Description="Configuration files" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/saturdaymorningplex/config</Config>
+  -->
+</Container>

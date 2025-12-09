@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ app_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        .status {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .info {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        .features {
+            text-align: left;
+            margin-top: 30px;
+        }
+        .features h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        .features ul {
+            list-style: none;
+        }
+        .features li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+        .api-links {
+            margin-top: 30px;
+        }
+        .api-links a {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .api-links a:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 {{ app_name }}</h1>
+        <div class="status">✓ Running on UnRAID</div>
+        
+        <div class="info">
+            <p><strong>Welcome to your containerized application!</strong></p>
+            <p class="timestamp">Server Time: {{ timestamp }}</p>
+        </div>
+
+        <div class="features">
+            <h2>Features</h2>
+            <ul>
+                <li>✓ Docker containerized</li>
+                <li>✓ UnRAID compatible</li>
+                <li>✓ Health check endpoint</li>
+                <li>✓ RESTful API ready</li>
+                <li>✓ Easy to customize</li>
+            </ul>
+        </div>
+
+        <div class="api-links">
+            <a href="/health" target="_blank">Health Check</a>
+            <a href="/api/info" target="_blank">API Info</a>
+        </div>
+    </div>
+
+    <script>
+        // Simple status check
+        setInterval(async () => {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                console.log('Health check:', data);
+            } catch (error) {
+                console.error('Health check failed:', error);
+            }
+        }, 30000); // Every 30 seconds
+    </script>
+</body>
+</html>
