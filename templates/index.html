@@ -243,6 +243,16 @@
                 </div>
             </div>
             
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="animation-only" style="width: auto; margin-right: 10px;">
+                    Only include Animation/Cartoon shows
+                </label>
+                <div class="help-text">
+                    When enabled, only shows with "Animation" genre will be included
+                </div>
+            </div>
+            
             <button onclick="testConnection()">Test Plex Connection</button>
             <button onclick="loadContentRatings()" class="secondary">Load Available Ratings</button>
         </div>
@@ -644,30 +654,62 @@
                 // Step 2: Generate playlists
                 showResult('<div class="info-box"><strong>⏳ Generating playlists...</strong><br>This may take several minutes depending on your library size. Please wait...</div>');
                 
+                const animationOnly = document.getElementById('animation-only').checked;
+                
                 const response = await fetch('/api/playlists/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         content_ratings: contentRatings,
                         tv_library: tvLibrary,
-                        playlist_prefix: playlistPrefix
+                        playlist_prefix: playlistPrefix,
+                        animation_only: animationOnly
                     })
                 });
                 
                 const data = await response.json();
                 
                 if (data.success) {
+                    // Build rating breakdown HTML
+                    let ratingBreakdownHtml = '';
+                    if (data.rating_breakdown) {
+                        const totalEps = data.total_episodes;
+                        ratingBreakdownHtml = '<strong>Content Rating Breakdown:</strong><br>';
+                        for (const [rating, count] of Object.entries(data.rating_breakdown)) {
+                            const percentage = ((count / totalEps) * 100).toFixed(1);
+                            ratingBreakdownHtml += `${rating}: ${count} episodes (${percentage}%)<br>`;
+                        }
+                    }
+                    
+                    // Build top shows HTML
+                    let topShowsHtml = '';
+                    if (data.top_shows) {
+                        topShowsHtml = '<strong>Top Shows by Episode Count:</strong><br>';
+                        for (const [show, count] of Object.entries(data.top_shows)) {
+                            topShowsHtml += `${show}: ${count} episodes<br>`;
+                        }
+                    }
+                    
                     showResult(`
                         <div class="success-box">
-                            <strong>✓ Playlists Created Successfully!</strong><br>
+                            <strong>✓ Playlists Created Successfully!</strong><br><br>
+                            
+                            <strong>Summary Statistics:</strong><br>
                             Shows processed: ${data.shows_count}<br>
-                            Total episodes: ${data.total_episodes}<br>
-                            Years generated: ${data.years_generated}<br>
+                            Total episodes distributed: ${data.total_episodes}<br>
+                            Average episodes per show: ${data.avg_episodes_per_show}<br>
+                            Total runtime: ${data.total_duration_hours} hours (${(data.total_duration_hours / 24).toFixed(1)} days)<br>
+                            Years generated: ${data.years_generated} (${data.year_range})<br>
                             Playlists created: ${data.playlists_created}<br>
+                            Average episodes per playlist: ${data.avg_episodes_per_playlist}<br>
                             <br>
-                            <strong>Shows included:</strong><br>
-                            ${data.shows.join(', ')}
-                            <br><br>
+                            
+                            ${ratingBreakdownHtml}
+                            <br>
+                            
+                            ${topShowsHtml}
+                            <br>
+                            
                             <strong>Sample playlists:</strong><br>
                             ${data.playlist_names.join('<br>')}
                         </div>

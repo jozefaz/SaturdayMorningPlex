@@ -336,9 +336,10 @@ def generate_playlists():
         
         playlist_prefix = data.get('playlist_prefix', 'Saturday Morning')
         weeks_per_year = int(data.get('weeks_per_year', 52))
+        animation_only = data.get('animation_only', False)
         
         logger.info(f"Generation parameters: libraries={tv_libraries}, ratings={content_ratings}, "
-                   f"prefix='{playlist_prefix}', weeks={weeks_per_year}")
+                   f"prefix='{playlist_prefix}', weeks={weeks_per_year}, animation_only={animation_only}")
         
         # Initialize connection if needed
         global plex_conn
@@ -402,7 +403,8 @@ def generate_playlists():
             tv_section_name=tv_libraries,  # Now supports list of library names
             content_ratings=content_ratings,
             playlist_prefix=playlist_prefix,
-            weeks_per_year=weeks_per_year
+            weeks_per_year=weeks_per_year,
+            animation_only=animation_only
         )
         
         if result.get('success'):

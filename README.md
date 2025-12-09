@@ -5,23 +5,40 @@ Automatically generate Saturday morning cartoon-style weekly playlists for your 
 ## ✨ Features
 
 - 🎬 **Automated Playlist Generation** - Creates 52 weekly playlists per year
-- 🎯 **Content Rating Filtering** - Filter shows by G, PG, PG-13, TV-Y, TV-Y7, etc.
-- 📺 **Smart Distribution** - Each week gets one episode from each show
+- 🎯 **Interactive Content Rating Selector** - Toggle buttons to select/deselect ratings (G, PG, TV-Y, etc.)
+- 📚 **Multi-Library Support** - Combine shows from multiple Plex libraries (e.g., "TV Shows, Anime, Kids")
+- 🎨 **Smart Quality Selection** - Automatically picks highest quality version when duplicates exist (bitrate → filesize → random)
+- 📅 **Air Date Sorting** - Episodes sorted chronologically for authentic viewing order
+- 📺 **Smart Distribution** - Each week gets one episode from each show (round-robin)
 - 🔄 **Multi-Season Support** - Automatically continues to next seasons
 - 📅 **Multi-Year Generation** - Creates playlists until all episodes are included
+- ✅ **Content Validation** - Verifies selected ratings exist in your library before generating
+- 🔁 **Smart Playlist Replacement** - Detects and replaces incomplete/outdated playlists
+- ⏱️ **Duration Display** - Shows total playlist duration in minutes
 - 🐳 **Docker & UnRAID Ready** - Easy deployment with Docker or UnRAID
-- 🌐 **Web Interface** - Simple, intuitive control panel
+- 🌐 **Modern Web Interface** - Interactive UI with real-time feedback
 
 ## 🎯 How It Works
 
 1. **Connect to Plex** - Authenticate with your Plex Media Server
-2. **Filter Shows** - Select content ratings (e.g., G, PG)
-3. **Generate Playlists** - Creates weekly playlists:
-   - Week 1: One episode from each show (S01E01 of all shows)
-   - Week 2: Next episode from each show (S01E02 of all shows)
-   - Week 3: Continue pattern...
-   - When a show runs out of season 1, moves to season 2
-4. **Multiple Years** - Continues creating years until all episodes are used
+2. **Select Libraries** - Click "Load Available Libraries" to see all TV libraries, select one or multiple
+3. **Choose Content Ratings** - Click "Load Available Ratings" and toggle ratings on/off with interactive buttons
+4. **Generate Playlists** - Creates weekly playlists with smart features:
+   - **Air Date Sorting**: Episodes sorted chronologically (oldest first)
+   - **Round-Robin Distribution**: Week 1 gets episode 1 from all shows, Week 2 gets episode 2, etc.
+   - **Quality Selection**: When same episode exists in multiple libraries, automatically picks highest bitrate version
+   - **Multi-Season**: Automatically continues to next seasons when shows run out of episodes
+   - **Deduplication**: Prevents duplicate episodes across libraries
+5. **Multiple Years** - Continues creating years until all episodes are used
+6. **Smart Replacement** - Regenerating updates existing playlists intelligently
+
+### Web Interface Features
+
+- **Interactive Content Rating Selector**: Click ratings to toggle them on/off (selected ratings show in blue with ✓)
+- **Multi-Library Selector**: Click "Select All TV Libraries" to include all libraries at once
+- **Real-Time Validation**: System checks if selected ratings exist before generating
+- **Live Status Updates**: Progress messages show what's happening during generation
+- **Playlist Summary**: View all existing playlists with episode counts and durations
 
 ### Example Output
 

@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>SaturdayMorningPlex</Name>
-  <Repository>yourdockerhub/saturdaymorningplex</Repository>
-  <Registry>https://hub.docker.com/r/yourdockerhub/saturdaymorningplex/</Registry>
+  <Repository>jozefaz/saturdaymorningplex</Repository>
+  <Registry>https://hub.docker.com/r/jozefaz/saturdaymorningplex/</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Support>https://github.com/yourusername/SaturdayMorningPlex/issues</Support>
-  <Project>https://github.com/yourusername/SaturdayMorningPlex</Project>
+  <Support>https://github.com/jozefaz/SaturdayMorningPlex/issues</Support>
+  <Project>https://github.com/jozefaz/SaturdayMorningPlex</Project>
   <Overview>SaturdayMorningPlex automatically generates Saturday morning cartoon-style playlists from your Plex TV library. It creates 52 weekly playlists per year, distributing episodes evenly across shows while filtering by content rating. Perfect for creating a nostalgic Saturday morning viewing experience for kids!</Overview>
   <Category>Tools: Status:Stable</Category>
   <WebUI>http://[IP]:[PORT:5000]</WebUI>
-  <TemplateURL>https://raw.githubusercontent.com/yourusername/SaturdayMorningPlex/main/unraid-template.xml</TemplateURL>
-  <Icon>https://raw.githubusercontent.com/yourusername/SaturdayMorningPlex/main/icon.png</Icon>
+  <TemplateURL>https://raw.githubusercontent.com/jozefaz/SaturdayMorningPlex/main/unraid-template.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/jozefaz/SaturdayMorningPlex/main/icon.png</Icon>
   <ExtraParams/>
   <PostArgs/>
   <CPUset/>

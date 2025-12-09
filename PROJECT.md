@@ -15,11 +15,16 @@ Parents want to recreate the Saturday morning cartoon experience for their kids,
 
 ### Solution
 Automatically generate playlists that:
-1. Filter TV shows by content rating (e.g., only "G" rated shows, or "G,PG" combined)
-2. Create 52 weekly playlists per year
-3. Distribute episodes round-robin style (one episode per show per week)
-4. Continue to next seasons automatically when shows run out of episodes
-5. Generate multiple years until all matching episodes are included
+1. Filter TV shows by content rating with interactive toggle buttons (e.g., "G", "PG", "TV-Y")
+2. Support multiple libraries simultaneously (combine "TV Shows", "Anime", "Kids Shows")
+3. Sort episodes by original air date for chronological viewing
+4. Automatically select highest quality version when duplicates exist across libraries
+5. Create 52 weekly playlists per year
+6. Distribute episodes round-robin style (one episode per show per week)
+7. Continue to next seasons automatically when shows run out of episodes
+8. Generate multiple years until all matching episodes are included
+9. Validate content ratings exist before generating
+10. Smart replacement of incomplete or outdated playlists
 
 ## How It Works
 
@@ -41,6 +46,41 @@ Automatically generate playlists that:
 - **Year 3, Week 1**: Final episodes from Show C
 
 Total: 3 years × 52 weeks = 156 playlists covering all 117 episodes
+
+### Smart Features
+
+#### Multi-Library Support
+- Users can select multiple TV libraries: "TV Shows-Raw, TV Shows-Converted, Anime"
+- System scans all selected libraries and combines shows
+- Deduplication ensures no duplicate episodes
+
+#### Episode Quality Selection
+When the same episode exists in multiple libraries (e.g., raw and converted versions):
+1. **Match episodes** by Show Title + Season + Episode Number
+2. **Compare quality metrics**:
+   - Primary: Highest bitrate wins
+   - Fallback: Largest file size wins
+   - Final: Random selection if metrics match
+3. **Select best version** for playlist
+
+Example: "SpongeBob S01E01" exists in both "TV Shows-Raw" (1080p, 5Mbps) and "TV Shows-Converted" (720p, 3Mbps) → System picks the 1080p version automatically.
+
+#### Air Date Sorting
+- Episodes sorted by `originallyAvailableAt` field (official air date)
+- Falls back to `addedAt` if air date missing
+- Creates authentic chronological viewing order
+- Within each week, episodes sorted oldest-to-newest
+
+#### Content Rating Validation
+- Before generation, system checks if selected ratings exist in chosen libraries
+- Prevents errors from typos or unavailable ratings
+- Shows available ratings if validation fails
+
+#### Smart Playlist Replacement
+- Detects existing playlists with same name
+- Compares episode counts (expected vs actual)
+- Automatically replaces incomplete or outdated playlists
+- Logs all replacement decisions for transparency
 
 ### Round-Robin Distribution Logic
 

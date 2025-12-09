@@ -23,29 +23,50 @@ class PlaylistGenerator:
         if not self.plex:
             raise ValueError("Plex connection not established")
     
-    def get_filtered_shows(self, tv_section, content_ratings):
+    def get_filtered_shows(self, tv_section, content_ratings, animation_only=False):
         """
-        Get TV shows filtered by content rating
+        Get TV shows filtered by content rating and optionally by animation genre
         
         Args:
             tv_section: Plex TV library section
             content_ratings: List of content ratings to include (e.g., ['G', 'PG'])
+            animation_only: If True, only include shows with 'Animation' genre
         
         Returns:
             list: Filtered TV show objects
         """
-        logger.info(f"Fetching shows with content ratings: {content_ratings}")
+        logger.info(f"Fetching shows with content ratings: {content_ratings}, animation_only: {animation_only}")
         
         all_shows = tv_section.all()
         filtered_shows = []
         
         for show in all_shows:
             # Check if show's content rating matches any in the list
-            if show.contentRating in content_ratings:
-                filtered_shows.append(show)
-                logger.debug(f"Included: {show.title} ({show.contentRating})")
-            else:
-                logger.debug(f"Excluded: {show.title} ({show.contentRating})")
+            if show.contentRating not in content_ratings:
+                logger.debug(f"Excluded (rating): {show.title} ({show.contentRating})")
+                continue
+            
+            # Check animation filter if enabled
+            if animation_only:
+                genres = [g.tag.lower() for g in show.genres] if hasattr(show, 'genres') and show.genres else []
+                # Check for animation-related genre tags
+                is_animation = any(
+                    'animation' in g or 
+                    'cartoon' in g or 
+                    'anime' in g
+                    for g in genres
+                )
+                
+                if not is_animation:
+                    genre_str = ', '.join([g.tag for g in show.genres]) if hasattr(show, 'genres') and show.genres else 'No genres'
+                    logger.debug(f"Excluded (not animation): {show.title} (genres: {genre_str})")
+                    continue
+                else:
+                    genre_str = ', '.join([g.tag for g in show.genres]) if hasattr(show, 'genres') and show.genres else 'No genres'
+                    logger.debug(f"Included (animation): {show.title} (genres: {genre_str})")
+            
+            filtered_shows.append(show)
+            logger.debug(f"Included: {show.title} ({show.contentRating})")
         
         logger.info(f"Found {len(filtered_shows)} shows matching criteria")
         return filtered_shows
@@ -327,7 +348,8 @@ class PlaylistGenerator:
     
     def generate_all_playlists(self, tv_section_name, content_ratings, 
                                playlist_prefix="Saturday Morning", 
-                               weeks_per_year=52):
+                               weeks_per_year=52,
+                               animation_only=False):
         """
         Complete workflow: filter shows, distribute episodes, create playlists
         
@@ -336,6 +358,7 @@ class PlaylistGenerator:
             content_ratings: List of content ratings (e.g., ['G', 'PG'])
             playlist_prefix: Prefix for playlist names
             weeks_per_year: Number of weeks per year
+            animation_only: If True, only include animation/cartoon shows
         
         Returns:
             dict: Summary of operation
@@ -346,6 +369,7 @@ class PlaylistGenerator:
         logger.info(f"Content Ratings: {content_ratings}")
         logger.info(f"Playlist Prefix: {playlist_prefix}")
         logger.info(f"Weeks per Year: {weeks_per_year}")
+        logger.info(f"Animation Only: {animation_only}")
         logger.info("="*60)
         
         try:
@@ -360,7 +384,7 @@ class PlaylistGenerator:
             for lib_name in library_names:
                 logger.debug(f"Fetching TV section: {lib_name}")
                 tv_section = self.plex.library.section(lib_name)
-                shows = self.get_filtered_shows(tv_section, content_ratings)
+                shows = self.get_filtered_shows(tv_section, content_ratings, animation_only)
                 all_shows.extend(shows)
                 logger.info(f"Found {len(shows)} shows in '{lib_name}'")
             
@@ -370,6 +394,9 @@ class PlaylistGenerator:
                     'success': False,
                     'error': f'No shows found with ratings: {content_ratings}'
                 }
+            
+            # Create show rating mapping
+            show_ratings = {show.title: show.contentRating for show in all_shows}
             
             # Get all episodes
             logger.info("Collecting episodes from shows...")
@@ -394,28 +421,70 @@ class PlaylistGenerator:
                 playlist_prefix
             )
             
-            # Calculate statistics
+            # Calculate comprehensive statistics
             total_episodes = sum(
                 len(week_eps) 
                 for year_data in yearly_playlists.values() 
                 for week_eps in year_data.values()
             )
             
+            # Calculate total duration
+            total_duration_ms = 0
+            episodes_per_show = {}
+            rating_breakdown = {}
+            
+            for show_title, episodes in show_episodes.items():
+                episodes_per_show[show_title] = len(episodes)
+                rating = show_ratings.get(show_title, 'Unknown')
+                # Count each show's episodes under its rating
+                rating_breakdown[rating] = rating_breakdown.get(rating, 0) + len(episodes)
+                # Add up duration
+                for ep in episodes:
+                    total_duration_ms += ep.duration or 0
+            
+            total_duration_hours = (total_duration_ms / 1000 / 60 / 60)
+            avg_episodes_per_show = sum(episodes_per_show.values()) / len(episodes_per_show) if episodes_per_show else 0
+            
+            # Year range
+            year_numbers = sorted(yearly_playlists.keys())
+            year_range = f"{year_numbers[0]}-{year_numbers[-1]}" if len(year_numbers) > 1 else str(year_numbers[0])
+            
             logger.info("="*60)
-            logger.info("Playlist generation complete!")
-            logger.info(f"Shows: {len(shows)}")
-            logger.info(f"Total Episodes: {total_episodes}")
-            logger.info(f"Years: {len(yearly_playlists)}")
+            logger.info("PLAYLIST GENERATION COMPLETE")
+            logger.info("="*60)
+            logger.info(f"Shows Processed: {len(all_shows)}")
+            logger.info(f"Total Episodes Distributed: {total_episodes}")
+            logger.info(f"Average Episodes per Show: {avg_episodes_per_show:.1f}")
+            logger.info(f"Total Runtime: {total_duration_hours:.1f} hours ({total_duration_hours/24:.1f} days)")
+            logger.info(f"Years Generated: {len(yearly_playlists)} ({year_range})")
             logger.info(f"Playlists Created: {len(created_playlists)}")
+            logger.info(f"Average Episodes per Playlist: {total_episodes/len(created_playlists):.1f}")
+            logger.info("")
+            logger.info("Content Rating Breakdown:")
+            for rating in sorted(rating_breakdown.keys()):
+                count = rating_breakdown[rating]
+                percentage = (count / total_episodes) * 100
+                logger.info(f"  {rating}: {count} episodes ({percentage:.1f}%)")
+            logger.info("")
+            logger.info("Top 10 Shows by Episode Count:")
+            top_shows = sorted(episodes_per_show.items(), key=lambda x: x[1], reverse=True)[:10]
+            for show_name, ep_count in top_shows:
+                logger.info(f"  {show_name}: {ep_count} episodes")
             logger.info("="*60)
             
             return {
                 'success': True,
-                'shows_count': len(shows),
-                'shows': [s.title for s in shows],
+                'shows_count': len(all_shows),
+                'shows': [s.title for s in all_shows],
                 'total_episodes': total_episodes,
+                'total_duration_hours': round(total_duration_hours, 1),
+                'avg_episodes_per_show': round(avg_episodes_per_show, 1),
                 'years_generated': len(yearly_playlists),
+                'year_range': year_range,
                 'playlists_created': len(created_playlists),
+                'avg_episodes_per_playlist': round(total_episodes/len(created_playlists), 1),
+                'rating_breakdown': rating_breakdown,
+                'top_shows': dict(top_shows),
                 'playlist_names': [p.title for p in created_playlists[:10]]  # First 10
             }
             
@@ -450,7 +519,7 @@ class PlaylistGenerator:
                     {
                         'title': p.title,
                         'item_count': p.leafCount,
-                        'duration': p.durationInSeconds
+                        'duration': p.duration / 1000 if hasattr(p, 'duration') and p.duration else 0  # Convert ms to seconds
                     }
                     for p in matching
                 ]
