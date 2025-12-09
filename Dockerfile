@@ -15,6 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY app.py .
+COPY plex_connection.py .
+COPY playlist_generator.py .
 COPY templates/ templates/
 
 # Create non-root user for security
