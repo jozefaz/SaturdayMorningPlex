@@ -1,251 +1,157 @@
 # SaturdayMorningPlex
 
-A containerized web application designed for deployment on UnRAID servers.
+Automatically generate Saturday morning cartoon-style weekly playlists for your Plex server!
 
-## Features
+## ✨ Features
 
-- 🐳 Docker containerized
-- 🚀 UnRAID ready with template
-- 🔒 Non-root user for security
-- ✅ Health check endpoints
-- 🎨 Modern web interface
-- 📊 RESTful API ready
+- 🎬 **Automated Playlist Generation** - Creates 52 weekly playlists per year
+- 🎯 **Content Rating Filtering** - Filter shows by G, PG, PG-13, TV-Y, TV-Y7, etc.
+- 📺 **Smart Distribution** - Each week gets one episode from each show
+- 🔄 **Multi-Season Support** - Automatically continues to next seasons
+- 📅 **Multi-Year Generation** - Creates playlists until all episodes are included
+- 🐳 **Docker & UnRAID Ready** - Easy deployment with Docker or UnRAID
+- 🌐 **Web Interface** - Simple, intuitive control panel
 
-## Quick Start
+## 🎯 How It Works
 
-### Local Development
+1. **Connect to Plex** - Authenticate with your Plex Media Server
+2. **Filter Shows** - Select content ratings (e.g., G, PG)
+3. **Generate Playlists** - Creates weekly playlists:
+   - Week 1: One episode from each show (S01E01 of all shows)
+   - Week 2: Next episode from each show (S01E02 of all shows)
+   - Week 3: Continue pattern...
+   - When a show runs out of season 1, moves to season 2
+4. **Multiple Years** - Continues creating years until all episodes are used
+
+### Example Output
+
+If you have 3 shows with content rating "G":
+- Show A: 26 episodes (2 seasons, 13 each)
+- Show B: 39 episodes (3 seasons, 13 each)
+- Show C: 52 episodes (4 seasons, 13 each)
+
+The generator creates:
+- **Year 1**: 52 weeks, each with 3 episodes (one from each show)
+- **Year 2**: Continues with remaining episodes
+- **Year 3**: Final episodes from Show C
+
+Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Plex Media Server with TV Shows library
+- Docker or UnRAID server
+- Plex authentication token (see [Getting Your Plex Token](#getting-your-plex-token))
+
+### Option 1: Docker Compose (Recommended)
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/SaturdayMorningPlex.git
+   git clone https://github.com/jozefaz/SaturdayMorningPlex.git
    cd SaturdayMorningPlex
    ```
 
-2. **Run with Docker Compose**
+2. **Edit docker-compose.yml** and configure your Plex settings:
+   ```yaml
+   environment:
+     - PLEX_URL=http://192.168.1.100:32400  # Your Plex server URL
+     - PLEX_TOKEN=your_token_here            # Your Plex token
+     - TV_LIBRARY_NAME=TV Shows              # Your TV library name
+     - CONTENT_RATINGS=G,PG                  # Desired content ratings
+   ```
+
+3. **Start the container**
    ```bash
    docker-compose up -d
    ```
 
-3. **Access the application**
-   - Open browser: http://localhost:5000
-   - Health check: http://localhost:5000/health
-   - API info: http://localhost:5000/api/info
+4. **Access the web interface**
+   - Open: `http://your-server-ip:5000`
 
-### Build Docker Image
+### Option 2: UnRAID
 
-```bash
-# Build the image
-docker build -t saturdaymorningplex:latest .
+See [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md) for detailed UnRAID installation instructions.
 
-# Run the container
-docker run -d \
-  --name saturdaymorningplex \
-  -p 5000:5000 \
-  -e TZ=America/New_York \
-  saturdaymorningplex:latest
-```
-
-## UnRAID Deployment
-
-### Method 1: Community Applications (Recommended)
-
-Once published to Community Applications:
-
-1. Open UnRAID web interface
-2. Go to **Apps** tab
-3. Search for "SaturdayMorningPlex"
-4. Click **Install**
-5. Configure settings and click **Apply**
-
-### Method 2: Manual Template Installation
-
-1. Copy `unraid-template.xml` to your UnRAID template folder:
-   ```bash
-   /boot/config/plugins/dockerMan/templates-user/
-   ```
-
-2. In UnRAID, go to **Docker** tab
-3. Click **Add Container**
-4. Select **SaturdayMorningPlex** from template dropdown
-5. Configure and click **Apply**
-
-### Method 3: Docker Hub Pull
-
-1. In UnRAID Docker tab, click **Add Container**
-2. Set **Repository**: `yourdockerhub/saturdaymorningplex:latest`
-3. Set **Port**: `5000` → `5000`
-4. Add environment variables:
-   - `TZ`: Your timezone (e.g., `America/New_York`)
-5. Click **Apply**
-
-## Publishing to Docker Hub
-
-1. **Create Docker Hub account** at https://hub.docker.com
-
-2. **Login to Docker Hub**
-   ```bash
-   docker login
-   ```
-
-3. **Tag your image**
-   ```bash
-   docker tag saturdaymorningplex:latest yourdockerhub/saturdaymorningplex:latest
-   docker tag saturdaymorningplex:latest yourdockerhub/saturdaymorningplex:1.0.0
-   ```
-
-4. **Push to Docker Hub**
-   ```bash
-   docker push yourdockerhub/saturdaymorningplex:latest
-   docker push yourdockerhub/saturdaymorningplex:1.0.0
-   ```
-
-## Publishing to UnRAID Community Applications
-
-1. **Fork the Community Applications repository**
-   - Go to https://github.com/Squidly271/dockerTemplates
-   - Click **Fork**
-
-2. **Add your template**
-   - Copy your `unraid-template.xml` to the forked repo
-   - Update the XML with correct Docker Hub URLs
-
-3. **Create Pull Request**
-   - Submit PR to main repository
-   - Wait for approval from moderators
-
-4. **Alternative: Custom Repository**
-   - Host your template XML on GitHub
-   - Users can add your repository URL to their UnRAID:
-     - Go to **Apps** → **Settings**
-     - Add your template repository URL
-
-## Configuration
+## 🔧 Configuration
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `APP_PORT` | `5000` | Application listening port |
-| `APP_HOST` | `0.0.0.0` | Host binding address |
-| `TZ` | `America/New_York` | Timezone for container |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PLEX_URL` | Yes* | - | Direct URL to Plex server (e.g., `http://192.168.1.100:32400`) |
+| `PLEX_TOKEN` | Yes* | - | Plex authentication token |
+| `PLEX_USERNAME` | Yes** | - | MyPlex email (alternative to token) |
+| `PLEX_PASSWORD` | Yes** | - | MyPlex password (alternative to token) |
+| `PLEX_SERVER_NAME` | No | - | Server name (required if using username/password) |
+| `TV_LIBRARY_NAME` | No | `TV Shows` | Name of your TV Shows library in Plex |
+| `CONTENT_RATINGS` | No | `G,PG` | Comma-separated content ratings to include |
+| `APP_PORT` | No | `5000` | Port for web interface |
+| `TZ` | No | `America/New_York` | Timezone for container |
 
-### Ports
+\* Use either `PLEX_URL` + `PLEX_TOKEN` OR `PLEX_USERNAME` + `PLEX_PASSWORD` + `PLEX_SERVER_NAME`
 
-| Container Port | Description |
-|----------------|-------------|
-| `5000` | Web interface and API |
+### Getting Your Plex Token
 
-### Volumes (Optional)
+**Method 1: From Plex Web App**
+1. Open Plex Web App
+2. Play any media item
+3. Click the three dots (...) → "Get Info"
+4. Click "View XML"
+5. Look in the URL for `X-Plex-Token=` - copy the value after it
 
-Uncomment in `docker-compose.yml` or UnRAID template:
+**Method 2: From Server Settings**
+1. Go to Settings → Server → Network
+2. Show Advanced
+3. The token is displayed there
 
-| Container Path | Description |
-|----------------|-------------|
-| `/app/data` | Application data storage |
-| `/app/config` | Configuration files |
-
-## API Endpoints
-
-- `GET /` - Main web interface
-- `GET /health` - Health check endpoint
-- `GET /api/info` - Application information
-
-## Customization
-
-### Modify the Application
-
-1. Edit `app.py` to add your functionality
-2. Update `templates/index.html` for UI changes
-3. Add dependencies to `requirements.txt`
-4. Rebuild the Docker image
-
-### Example: Add New Route
-
-```python
-@app.route('/api/custom')
-def custom_endpoint():
-    return jsonify({'message': 'Custom endpoint'})
-```
-
-## Development
-
-### Prerequisites
-
-- Python 3.11+
-- Docker
-- Docker Compose
-
-### Local Development Without Docker
-
+**Method 3: Using curl**
 ```bash
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Linux/Mac
-# venv\Scripts\activate  # On Windows
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run application
-python app.py
+curl -u 'YOUR_EMAIL:YOUR_PASSWORD' 'https://plex.tv/users/sign_in.xml' \\
+  -X POST -H 'X-Plex-Client-Identifier: MyApp'
 ```
 
-## Testing
+### Content Rating Examples
 
-```bash
-# Test health endpoint
-curl http://localhost:5000/health
+- **G Only**: `CONTENT_RATINGS=G`
+- **PG Only**: `CONTENT_RATINGS=PG`
+- **G and PG**: `CONTENT_RATINGS=G,PG`
+- **TV-Y and TV-Y7**: `CONTENT_RATINGS=TV-Y,TV-Y7`
+- **Multiple**: `CONTENT_RATINGS=G,PG,TV-Y,TV-Y7,TV-G`
 
-# Test info endpoint
-curl http://localhost:5000/api/info
-```
+**Note**: The filter is exact match only. If you set `PG`, it will ONLY include PG-rated shows, not G or PG-13.
 
-## Troubleshooting
+## 📖 Usage
 
-### Container won't start
-- Check logs: `docker logs saturdaymorningplex`
-- Verify port 5000 is not in use
-- Check file permissions
+### Web Interface
 
-### Can't access web interface
-- Ensure container is running: `docker ps`
-- Check firewall settings
-- Verify correct port mapping
+1. **Access the Interface**
+   - Navigate to `http://your-server-ip:5000`
 
-### Health check failing
-- Check application logs
-- Verify Python dependencies installed
-- Test endpoint manually: `curl http://localhost:5000/health`
+2. **Test Connection**
+   - Click "Test Plex Connection" to verify your Plex server is accessible
 
-## Security Notes
+3. **Configure Content Ratings**
+   - Enter desired content ratings (comma-separated)
+   - Click "Load Available Ratings" to see what's in your library
 
-- Container runs as non-root user (UID 1000)
-- No privileged mode required
-- Health checks enabled
-- Minimal base image (Python slim)
+4. **Generate Playlists**
+   - Click "Generate Playlists"
+   - Wait for processing (may take a few minutes for large libraries)
+   - View the results
 
-## License
+5. **View/Delete Playlists**
+   - Use the interface to manage your generated playlists
 
-MIT License - feel free to modify and distribute
+## 🤝 Contributing
 
-## Support
+Contributions are welcome! Issues and PRs at: https://github.com/jozefaz/SaturdayMorningPlex
 
-- Issues: https://github.com/yourusername/SaturdayMorningPlex/issues
-- Discussions: https://github.com/yourusername/SaturdayMorningPlex/discussions
+## 📝 License
 
-## Contributing
-
-Pull requests are welcome! For major changes, please open an issue first.
-
-## Changelog
-
-### v1.0.0 (2025-12-08)
-- Initial release
-- Basic web interface
-- Health check endpoints
-- UnRAID template
-- Docker Hub ready
+MIT License
 
 ---
 
-**Note**: Replace `yourdockerhub` and `yourusername` with your actual Docker Hub username and GitHub username throughout the files.
+**Made with ❤️ for Saturday morning cartoon lovers everywhere!**

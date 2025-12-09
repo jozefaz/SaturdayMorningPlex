@@ -14,27 +14,30 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
             padding: 20px;
         }
         .container {
+            max-width: 1000px;
+            margin: 0 auto;
             background: white;
             border-radius: 20px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 600px;
-            width: 100%;
-            text-align: center;
         }
         h1 {
             color: #333;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 2.5em;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
         }
         .status {
-            background: #4CAF50;
+            background: {% if plex_configured %}#4CAF50{% else %}#ff9800{% endif %};
             color: white;
             padding: 10px 20px;
             border-radius: 25px;
@@ -42,82 +45,488 @@
             margin: 20px 0;
             font-weight: bold;
         }
-        .info {
-            background: #f5f5f5;
-            padding: 20px;
+        .section {
+            background: #f8f9fa;
+            padding: 25px;
             border-radius: 10px;
-            margin-top: 20px;
+            margin: 20px 0;
         }
-        .timestamp {
-            color: #666;
-            font-size: 0.9em;
-            margin-top: 20px;
-        }
-        .features {
-            text-align: left;
-            margin-top: 30px;
-        }
-        .features h2 {
+        .section h2 {
             color: #667eea;
             margin-bottom: 15px;
+            font-size: 1.5em;
         }
-        .features ul {
+        .form-group {
+            margin: 15px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .form-group .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.danger {
+            background: #f44336;
+        }
+        button.danger:hover {
+            background: #d32f2f;
+        }
+        button.secondary {
+            background: #6c757d;
+        }
+        button.secondary:hover {
+            background: #5a6268;
+        }
+        .info-box {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .success-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .error-box {
+            background: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading.active {
+            display: block;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .features {
             list-style: none;
+            margin-top: 15px;
         }
         .features li {
             padding: 10px;
             margin: 5px 0;
-            background: #f8f9fa;
+            background: white;
             border-left: 4px solid #667eea;
             border-radius: 5px;
         }
-        .api-links {
-            margin-top: 30px;
+        .timestamp {
+            color: #666;
+            font-size: 0.9em;
+            text-align: center;
+            margin-top: 20px;
         }
-        .api-links a {
-            display: inline-block;
-            margin: 5px;
-            padding: 10px 20px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
+        #result {
+            margin-top: 20px;
+        }
+        .playlist-list {
+            max-height: 400px;
+            overflow-y: auto;
+            background: white;
+            padding: 15px;
             border-radius: 5px;
-            transition: background 0.3s;
+            margin-top: 15px;
         }
-        .api-links a:hover {
-            background: #764ba2;
+        .playlist-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .playlist-item:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎬 {{ app_name }}</h1>
-        <div class="status">✓ Running on UnRAID</div>
+        <div class="subtitle">Automated Saturday Morning Cartoon Playlist Generator</div>
         
-        <div class="info">
-            <p><strong>Welcome to your containerized application!</strong></p>
-            <p class="timestamp">Server Time: {{ timestamp }}</p>
+        <div style="text-align: center;">
+            <div class="status">
+                {% if plex_configured %}
+                    ✓ Plex Configured
+                {% else %}
+                    ⚠️ Plex Not Configured
+                {% endif %}
+            </div>
         </div>
 
-        <div class="features">
-            <h2>Features</h2>
-            <ul>
-                <li>✓ Docker containerized</li>
-                <li>✓ UnRAID compatible</li>
-                <li>✓ Health check endpoint</li>
-                <li>✓ RESTful API ready</li>
-                <li>✓ Easy to customize</li>
-            </ul>
+        <!-- Configuration Section -->
+        <div class="section">
+            <h2>⚙️ Configuration</h2>
+            <div class="info-box">
+                <strong>Current Settings:</strong><br>
+                TV Library: <strong>{{ tv_library }}</strong><br>
+                Content Ratings: <strong>{{ content_ratings }}</strong>
+            </div>
+            
+            <div class="form-group">
+                <label for="content-ratings">Content Ratings (comma-separated)</label>
+                <input type="text" id="content-ratings" value="{{ content_ratings }}" 
+                       placeholder="G,PG,PG-13">
+                <div class="help-text">
+                    Examples: "G" (only G), "PG" (only PG), "G,PG" (both G and PG)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="tv-library">TV Library Name</label>
+                <input type="text" id="tv-library" value="{{ tv_library }}" 
+                       placeholder="TV Shows">
+            </div>
+            
+            <div class="form-group">
+                <label for="playlist-prefix">Playlist Prefix</label>
+                <input type="text" id="playlist-prefix" value="Saturday Morning" 
+                       placeholder="Saturday Morning">
+                <div class="help-text">
+                    Playlists will be named: "[Prefix] - Year 1 Week 01", etc.
+                </div>
+            </div>
+            
+            <button onclick="testConnection()">Test Plex Connection</button>
+            <button onclick="loadContentRatings()" class="secondary">Load Available Ratings</button>
         </div>
 
-        <div class="api-links">
-            <a href="/health" target="_blank">Health Check</a>
-            <a href="/api/info" target="_blank">API Info</a>
+        <!-- Actions Section -->
+        <div class="section">
+            <h2>🎯 Actions</h2>
+            
+            <div class="info-box">
+                <strong>How it works:</strong>
+                <ul class="features">
+                    <li>Scans your Plex TV library for shows matching selected content ratings</li>
+                    <li>Creates 52 weekly playlists per year (one for each week)</li>
+                    <li>Distributes episodes evenly - each week gets one episode from each show</li>
+                    <li>Continues to next seasons automatically when needed</li>
+                    <li>Generates multiple years until all episodes are included</li>
+                </ul>
+            </div>
+            
+            <button onclick="generatePlaylists()">Generate Playlists</button>
+            <button onclick="viewPlaylists()" class="secondary">View Existing Playlists</button>
+            <button onclick="deletePlaylists()" class="danger">Delete All Playlists</button>
         </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="result"></div>
+
+        <!-- Timestamp -->
+        <div class="timestamp">Server Time: {{ timestamp }}</div>
     </div>
 
     <script>
-        // Simple status check
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        function showResult(html) {
+            document.getElementById('result').innerHTML = html;
+        }
+
+        async function testConnection() {
+            showLoading(true);
+            showResult('');
+            
+            try {
+                const response = await fetch('/api/plex/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`
+                        <div class="success-box">
+                            <strong>✓ Connected Successfully!</strong><br>
+                            Server: ${data.server_name}<br>
+                            Version: ${data.version}<br>
+                            Platform: ${data.platform}<br>
+                            Libraries: ${data.library_sections.join(', ')}
+                        </div>
+                    `);
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Connection Failed</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadContentRatings() {
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/plex/content-ratings');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`
+                        <div class="success-box">
+                            <strong>Available Content Ratings:</strong><br>
+                            ${data.ratings.join(', ')}
+                        </div>
+                    `);
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Failed to load ratings</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function generatePlaylists() {
+            if (!confirm('This will create new playlists in your Plex server. Continue?')) {
+                return;
+            }
+            
+            showLoading(true);
+            showResult('');
+            
+            const contentRatings = document.getElementById('content-ratings').value;
+            const tvLibrary = document.getElementById('tv-library').value;
+            const playlistPrefix = document.getElementById('playlist-prefix').value;
+            
+            try {
+                const response = await fetch('/api/playlists/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        content_ratings: contentRatings,
+                        tv_library: tvLibrary,
+                        playlist_prefix: playlistPrefix
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`
+                        <div class="success-box">
+                            <strong>✓ Playlists Created Successfully!</strong><br>
+                            Shows processed: ${data.shows_count}<br>
+                            Total episodes: ${data.total_episodes}<br>
+                            Years generated: ${data.years_generated}<br>
+                            Playlists created: ${data.playlists_created}<br>
+                            <br>
+                            <strong>Shows included:</strong><br>
+                            ${data.shows.join(', ')}
+                            <br><br>
+                            <strong>Sample playlists:</strong><br>
+                            ${data.playlist_names.join('<br>')}
+                        </div>
+                    `);
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Generation Failed</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function viewPlaylists() {
+            showLoading(true);
+            
+            const playlistPrefix = document.getElementById('playlist-prefix').value;
+            
+            try {
+                const response = await fetch(`/api/playlists/summary?prefix=${encodeURIComponent(playlistPrefix)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (data.total_playlists === 0) {
+                        showResult(`
+                            <div class="info-box">
+                                <strong>No playlists found</strong><br>
+                                Generate playlists first to see them here.
+                            </div>
+                        `);
+                    } else {
+                        let playlistsHtml = '<div class="section"><h2>Existing Playlists</h2>';
+                        playlistsHtml += `<p>Total: <strong>${data.total_playlists}</strong> playlists</p>`;
+                        playlistsHtml += '<div class="playlist-list">';
+                        
+                        for (const playlist of data.playlists) {
+                            const duration = Math.round(playlist.duration / 60);
+                            playlistsHtml += `
+                                <div class="playlist-item">
+                                    <strong>${playlist.title}</strong><br>
+                                    Episodes: ${playlist.item_count} | Duration: ${duration} minutes
+                                </div>
+                            `;
+                        }
+                        
+                        playlistsHtml += '</div></div>';
+                        showResult(playlistsHtml);
+                    }
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Failed to load playlists</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deletePlaylists() {
+            const playlistPrefix = document.getElementById('playlist-prefix').value;
+            
+            if (!confirm(`This will DELETE all playlists starting with "${playlistPrefix}". This cannot be undone! Continue?`)) {
+                return;
+            }
+            
+            showLoading(true);
+            showResult('');
+            
+            try {
+                const response = await fetch('/api/playlists/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        playlist_prefix: playlistPrefix
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showResult(`
+                        <div class="success-box">
+                            <strong>✓ Playlists Deleted</strong><br>
+                            Found: ${data.total_found}<br>
+                            Deleted: ${data.deleted_count}
+                        </div>
+                    `);
+                } else {
+                    showResult(`
+                        <div class="error-box">
+                            <strong>✗ Deletion Failed</strong><br>
+                            ${data.error}
+                        </div>
+                    `);
+                }
+            } catch (error) {
+                showResult(`
+                    <div class="error-box">
+                        <strong>✗ Error</strong><br>
+                        ${error.message}
+                    </div>
+                `);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Auto-check connection status
         setInterval(async () => {
             try {
                 const response = await fetch('/health');
@@ -126,7 +535,7 @@
             } catch (error) {
                 console.error('Health check failed:', error);
             }
-        }, 30000); // Every 30 seconds
+        }, 60000); // Every minute
     </script>
 </body>
 </html>

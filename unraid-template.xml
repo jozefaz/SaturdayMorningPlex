@@ -9,7 +9,7 @@
   <Privileged>false</Privileged>
   <Support>https://github.com/yourusername/SaturdayMorningPlex/issues</Support>
   <Project>https://github.com/yourusername/SaturdayMorningPlex</Project>
-  <Overview>SaturdayMorningPlex is a containerized web application designed for UnRAID. This is a template application that can be customized for your specific needs.</Overview>
+  <Overview>SaturdayMorningPlex automatically generates Saturday morning cartoon-style playlists from your Plex TV library. It creates 52 weekly playlists per year, distributing episodes evenly across shows while filtering by content rating. Perfect for creating a nostalgic Saturday morning viewing experience for kids!</Overview>
   <Category>Tools: Status:Stable</Category>
   <WebUI>http://[IP]:[PORT:5000]</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/yourusername/SaturdayMorningPlex/main/unraid-template.xml</TemplateURL>
@@ -25,6 +25,10 @@
   <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g., America/New_York, Europe/London)" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
   <Config Name="App Port" Target="APP_PORT" Default="5000" Mode="" Description="Internal application port (usually leave as 5000)" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
   <Config Name="App Host" Target="APP_HOST" Default="0.0.0.0" Mode="" Description="Application host binding (leave as 0.0.0.0)" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
+  <Config Name="Plex Server URL" Target="PLEX_URL" Default="http://192.168.1.100:32400" Mode="" Description="Direct URL to your Plex server (e.g., http://192.168.1.100:32400)" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.100:32400</Config>
+  <Config Name="Plex Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex authentication token (see documentation for how to get this)" Type="Variable" Display="always" Required="true" Mask="true"></Config>
+  <Config Name="TV Library Name" Target="TV_LIBRARY_NAME" Default="TV Shows" Mode="" Description="Name of your Plex TV Shows library section" Type="Variable" Display="always" Required="false" Mask="false">TV Shows</Config>
+  <Config Name="Content Ratings" Target="CONTENT_RATINGS" Default="G,PG" Mode="" Description="Comma-separated content ratings to include (e.g., G,PG,TV-Y,TV-Y7)" Type="Variable" Display="always" Required="false" Mask="false">G,PG</Config>
   <!-- Uncomment to add data persistence -->
   <!--
   <Config Name="AppData" Target="/app/data" Default="/mnt/user/appdata/saturdaymorningplex/data" Mode="rw" Description="Application data storage" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/saturdaymorningplex/data</Config>

@@ -11,6 +11,16 @@ services:
       - APP_PORT=5000
       - APP_HOST=0.0.0.0
       - TZ=America/New_York
+      # Plex Configuration - Option 1: Direct connection
+      - PLEX_URL=http://YOUR_PLEX_SERVER:32400
+      - PLEX_TOKEN=YOUR_PLEX_TOKEN
+      # Plex Configuration - Option 2: MyPlex account
+      # - PLEX_USERNAME=your_email@example.com
+      # - PLEX_PASSWORD=your_password
+      # - PLEX_SERVER_NAME=Your Server Name
+      # Application Settings
+      - TV_LIBRARY_NAME=TV Shows
+      - CONTENT_RATINGS=G,PG
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
