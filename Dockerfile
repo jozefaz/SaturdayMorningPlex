@@ -21,9 +21,11 @@ COPY plex_connection.py .
 COPY playlist_generator.py .
 COPY templates/ templates/
 
-# Create non-root user for security
+# Create non-root user for security and config directory with proper permissions
 RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+    chown -R appuser:appuser /app && \
+    mkdir -p /config/logs && \
+    chown -R appuser:appuser /config
 USER appuser
 
 # Expose port
