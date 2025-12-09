@@ -1,9 +1,11 @@
 # Use Python slim image for smaller size
 FROM python:3.11-slim
 
-# Set metadata labels for UnRAID
-LABEL maintainer="Your Name <your.email@example.com>"
-LABEL description="SaturdayMorningPlex - Container app for UnRAID"
+# Set metadata labels for GitHub Container Registry and UnRAID
+LABEL org.opencontainers.image.source="https://github.com/jozefaz/SaturdayMorningPlex"
+LABEL org.opencontainers.image.description="Automated Plex playlist generator that creates Saturday morning cartoon-style weekly schedules with content rating filters and round-robin episode distribution"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL maintainer="jozefaz"
 LABEL version="1.0.0"
 
 # Set working directory

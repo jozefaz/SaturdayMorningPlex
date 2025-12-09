@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>SaturdayMorningPlex</Name>
-  <Repository>jozefaz/saturdaymorningplex</Repository>
-  <Registry>https://hub.docker.com/r/jozefaz/saturdaymorningplex/</Registry>
+  <Repository>ghcr.io/jozefaz/saturdaymorningplex:latest</Repository>
+  <Registry>https://github.com/jozefaz/SaturdayMorningPlex/pkgs/container/saturdaymorningplex</Registry>
   <Network>bridge</Network>
   <MyIP/>
   <Shell>bash</Shell>
