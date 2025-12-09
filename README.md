@@ -122,6 +122,72 @@ curl -u 'YOUR_EMAIL:YOUR_PASSWORD' 'https://plex.tv/users/sign_in.xml' \\
 
 **Note**: The filter is exact match only. If you set `PG`, it will ONLY include PG-rated shows, not G or PG-13.
 
+## 📊 Logging & Monitoring
+
+### Docker Logs
+
+View real-time logs from your container:
+```bash
+# Follow logs (live view)
+docker logs -f saturdaymorningplex
+
+# View last 100 lines
+docker logs --tail 100 saturdaymorningplex
+
+# Using docker-compose
+docker-compose logs -f
+```
+
+### UnRAID Logs
+
+1. **Web UI**: Docker tab → SaturdayMorningPlex → Logs button
+2. **Persistent Logs**: Access log file at `/mnt/user/appdata/saturdaymorningplex/config/logs/saturdaymorningplex.log`
+
+### Log Levels
+
+Configure logging detail via `LOG_LEVEL` environment variable:
+
+- `ERROR` - Only errors (minimal logging)
+- `WARNING` - Warnings and errors
+- `INFO` - General operations (default, recommended)
+- `DEBUG` - Detailed tracing (for troubleshooting)
+
+**Example docker-compose.yml:**
+```yaml
+environment:
+  - LOG_LEVEL=DEBUG  # Enable detailed logging
+```
+
+### Log Rotation
+
+- Log files automatically rotate at **10MB**
+- Keeps **5 backup files** (50MB total maximum)
+- Prevents disk space issues on long-running containers
+
+### What Gets Logged
+
+- **INFO**: Plex connections, playlist generation progress, summary statistics
+- **DEBUG**: Detailed API calls, show filtering, episode distribution steps
+- **WARNING**: Fallback behaviors, missing configuration
+- **ERROR**: Authentication failures, API errors, playlist creation failures
+
+### Troubleshooting with Logs
+
+**Connection Issues:**
+```bash
+docker logs saturdaymorningplex | grep -i "connection"
+```
+
+**Playlist Generation:**
+```bash
+docker logs saturdaymorningplex | grep -i "playlist"
+```
+
+**All Errors:**
+```bash
+docker logs saturdaymorningplex | grep -i "error"
+```
+
 ## 📖 Usage
 
 ### Web Interface

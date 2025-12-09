@@ -90,9 +90,13 @@ class PlexConnection:
         Returns:
             dict: Connection status and server info
         """
+        logger.debug("Testing Plex connection")
         try:
             if not self.plex:
                 self.connect()
+            
+            sections = [section.title for section in self.plex.library.sections()]
+            logger.info(f"Connection test successful: {self.plex.friendlyName} ({len(sections)} sections)")
             
             return {
                 'success': True,
@@ -100,9 +104,10 @@ class PlexConnection:
                 'version': self.plex.version,
                 'platform': self.plex.platform,
                 'platform_version': self.plex.platformVersion,
-                'library_sections': [section.title for section in self.plex.library.sections()]
+                'library_sections': sections
             }
         except Exception as e:
+            logger.error(f"Connection test failed: {e}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e)
@@ -121,10 +126,14 @@ class PlexConnection:
         if not self.plex:
             self.connect()
         
+        logger.debug(f"Fetching TV section: {section_name}")
         try:
-            return self.plex.library.section(section_name)
+            section = self.plex.library.section(section_name)
+            logger.info(f"Found TV section: {section_name}")
+            return section
         except Exception as e:
             logger.error(f"Failed to get TV section '{section_name}': {e}")
+            logger.debug("Attempting to find any TV section as fallback")
             # Try to find any TV section
             for section in self.plex.library.sections():
                 if section.type == 'show':
@@ -140,13 +149,15 @@ class PlexConnection:
         Returns:
             list: Available server names
         """
+        logger.debug("Fetching available servers from MyPlex")
         if not self._account:
             if not (self.username and self.password):
                 raise ValueError("MyPlex username and password required")
+            logger.info("Logging into MyPlex to get server list")
             self._account = MyPlexAccount(self.username, self.password)
         
         resources = self._account.resources()
-        return [
+        servers = [
             {
                 'name': r.name,
                 'product': r.product,
@@ -155,3 +166,5 @@ class PlexConnection:
             }
             for r in resources if r.product == 'Plex Media Server'
         ]
+        logger.info(f"Found {len(servers)} Plex servers")
+        return servers

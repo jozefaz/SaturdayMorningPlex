@@ -21,6 +21,11 @@ services:
       # Application Settings
       - TV_LIBRARY_NAME=TV Shows
       - CONTENT_RATINGS=G,PG
+      # Logging Configuration
+      - LOG_LEVEL=INFO  # Options: DEBUG, INFO, WARNING, ERROR
+      - LOG_DIR=/config/logs
+    volumes:
+      - ./config:/config  # Persistent storage for logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]

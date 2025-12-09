@@ -209,23 +209,35 @@ class PlaylistGenerator:
         Returns:
             dict: Summary of operation
         """
+        logger.info("="*60)
+        logger.info("Starting playlist generation workflow")
+        logger.info(f"TV Section: {tv_section_name}")
+        logger.info(f"Content Ratings: {content_ratings}")
+        logger.info(f"Playlist Prefix: {playlist_prefix}")
+        logger.info(f"Weeks per Year: {weeks_per_year}")
+        logger.info("="*60)
+        
         try:
             # Get TV section
+            logger.debug(f"Fetching TV section: {tv_section_name}")
             tv_section = self.plex.library.section(tv_section_name)
             
             # Filter shows by content rating
             shows = self.get_filtered_shows(tv_section, content_ratings)
             
             if not shows:
+                logger.warning("No shows found matching criteria!")
                 return {
                     'success': False,
                     'error': f'No shows found with ratings: {content_ratings}'
                 }
             
             # Get all episodes
+            logger.info("Collecting episodes from shows...")
             show_episodes = self.get_all_episodes(shows)
             
             if not show_episodes:
+                logger.error("No episodes found in selected shows")
                 return {
                     'success': False,
                     'error': 'No episodes found in selected shows'
@@ -249,6 +261,14 @@ class PlaylistGenerator:
                 for year_data in yearly_playlists.values() 
                 for week_eps in year_data.values()
             )
+            
+            logger.info("="*60)
+            logger.info("Playlist generation complete!")
+            logger.info(f"Shows: {len(shows)}")
+            logger.info(f"Total Episodes: {total_episodes}")
+            logger.info(f"Years: {len(yearly_playlists)}")
+            logger.info(f"Playlists Created: {len(created_playlists)}")
+            logger.info("="*60)
             
             return {
                 'success': True,
@@ -277,9 +297,12 @@ class PlaylistGenerator:
         Returns:
             dict: Summary of existing playlists
         """
+        logger.debug(f"Getting playlist summary for prefix: {playlist_prefix}")
         try:
             all_playlists = self.plex.playlists()
             matching = [p for p in all_playlists if p.title.startswith(playlist_prefix)]
+            
+            logger.info(f"Found {len(matching)} playlists with prefix '{playlist_prefix}'")
             
             return {
                 'success': True,
@@ -294,6 +317,7 @@ class PlaylistGenerator:
                 ]
             }
         except Exception as e:
+            logger.error(f"Failed to get playlist summary: {e}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e)
@@ -309,10 +333,12 @@ class PlaylistGenerator:
         Returns:
             dict: Summary of deletion
         """
+        logger.info(f"Deleting all playlists with prefix: {playlist_prefix}")
         try:
             all_playlists = self.plex.playlists()
             matching = [p for p in all_playlists if p.title.startswith(playlist_prefix)]
             
+            logger.debug(f"Found {len(matching)} playlists to delete")
             deleted_count = 0
             for playlist in matching:
                 try:
@@ -322,12 +348,15 @@ class PlaylistGenerator:
                 except Exception as e:
                     logger.error(f"Failed to delete {playlist.title}: {e}")
             
+            logger.info(f"Deletion complete: {deleted_count}/{len(matching)} playlists deleted")
+            
             return {
                 'success': True,
                 'deleted_count': deleted_count,
                 'total_found': len(matching)
             }
         except Exception as e:
+            logger.error(f"Failed to delete playlists: {e}", exc_info=True)
             return {
                 'success': False,
                 'error': str(e)

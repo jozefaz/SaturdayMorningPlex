@@ -29,9 +29,7 @@
   <Config Name="Plex Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex authentication token (see documentation for how to get this)" Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="TV Library Name" Target="TV_LIBRARY_NAME" Default="TV Shows" Mode="" Description="Name of your Plex TV Shows library section" Type="Variable" Display="always" Required="false" Mask="false">TV Shows</Config>
   <Config Name="Content Ratings" Target="CONTENT_RATINGS" Default="G,PG" Mode="" Description="Comma-separated content ratings to include (e.g., G,PG,TV-Y,TV-Y7)" Type="Variable" Display="always" Required="false" Mask="false">G,PG</Config>
-  <!-- Uncomment to add data persistence -->
-  <!--
-  <Config Name="AppData" Target="/app/data" Default="/mnt/user/appdata/saturdaymorningplex/data" Mode="rw" Description="Application data storage" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/saturdaymorningplex/data</Config>
-  <Config Name="Config" Target="/app/config" Default="/mnt/user/appdata/saturdaymorningplex/config" Mode="rw" Description="Configuration files" Type="Path" Display="always" Required="false" Mask="false">/mnt/user/appdata/saturdaymorningplex/config</Config>
-  -->
+  <Config Name="Log Level" Target="LOG_LEVEL" Default="INFO" Mode="" Description="Logging level: DEBUG, INFO, WARNING, ERROR" Type="Variable" Display="advanced" Required="false" Mask="false">INFO</Config>
+  <Config Name="Log Directory" Target="LOG_DIR" Default="/config/logs" Mode="" Description="Internal path for log files (use with Config volume mount)" Type="Variable" Display="advanced" Required="false" Mask="false">/config/logs</Config>
+  <Config Name="Config Storage" Target="/config" Default="/mnt/user/appdata/saturdaymorningplex/config" Mode="rw" Description="Persistent storage for logs and configuration" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/saturdaymorningplex/config</Config>
 </Container>

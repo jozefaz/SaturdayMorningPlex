@@ -5,19 +5,81 @@ Creates Saturday morning cartoon-style weekly playlists
 """
 from flask import Flask, render_template, jsonify, request
 import os
+import sys
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from plex_connection import PlexConnection
 from playlist_generator import PlaylistGenerator
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging for Docker and UnRAID compatibility
+def setup_logging():
+    """
+    Configure logging to output to both stdout (Docker logs) and file (UnRAID logs).
+    - Docker: Logs to stdout/stderr (viewable via 'docker logs')
+    - UnRAID: Logs to /config/logs/saturdaymorningplex.log (persistent)
+    - Formats: ISO8601 timestamps, structured logging
+    """
+    log_level = os.getenv('LOG_LEVEL', 'INFO').upper()
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+    date_format = '%Y-%m-%d %H:%M:%S'
+    
+    # Root logger configuration
+    root_logger = logging.getLogger()
+    root_logger.setLevel(getattr(logging, log_level, logging.INFO))
+    
+    # Remove any existing handlers
+    root_logger.handlers.clear()
+    
+    # Console handler (stdout) - for Docker logs
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
+    console_formatter = logging.Formatter(log_format, datefmt=date_format)
+    console_handler.setFormatter(console_formatter)
+    root_logger.addHandler(console_handler)
+    
+    # File handler - for UnRAID persistent logs
+    log_dir = os.getenv('LOG_DIR', '/config/logs')
+    if not os.path.exists(log_dir):
+        try:
+            os.makedirs(log_dir, exist_ok=True)
+        except (OSError, PermissionError) as e:
+            # If can't create log directory, log to /tmp as fallback
+            log_dir = '/tmp'
+            root_logger.warning(f"Could not create log directory, using {log_dir}: {e}")
+    
+    log_file = os.path.join(log_dir, 'saturdaymorningplex.log')
+    try:
+        file_handler = RotatingFileHandler(
+            log_file,
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,
+            encoding='utf-8'
+        )
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter(log_format, datefmt=date_format)
+        file_handler.setFormatter(file_formatter)
+        root_logger.addHandler(file_handler)
+        root_logger.info(f"File logging enabled: {log_file}")
+    except (OSError, PermissionError) as e:
+        root_logger.warning(f"Could not create log file {log_file}: {e}")
+    
+    # Log startup information
+    root_logger.info("="*60)
+    root_logger.info("SaturdayMorningPlex Starting")
+    root_logger.info(f"Log Level: {log_level}")
+    root_logger.info(f"Python Version: {sys.version}")
+    root_logger.info(f"Log Directory: {log_dir}")
+    root_logger.info("="*60)
+
+setup_logging()
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Suppress Flask's default logging to avoid duplicate entries
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.WARNING)
 
 # Configuration from environment variables
 APP_PORT = int(os.getenv('APP_PORT', 5000))
@@ -36,9 +98,15 @@ CONTENT_RATINGS = [rating.strip() for rating in CONTENT_RATINGS if rating.strip(
 # Global Plex connection (will be initialized on first use)
 plex_conn = None
 
+logger.debug(f"Environment: PLEX_URL={'set' if PLEX_URL else 'not set'}, "
+             f"PLEX_TOKEN={'set' if PLEX_TOKEN else 'not set'}, "
+             f"TV_LIBRARY={TV_LIBRARY_NAME}, "
+             f"CONTENT_RATINGS={CONTENT_RATINGS}")
+
 @app.route('/')
 def index():
     """Main page"""
+    logger.info("Web interface accessed")
     return render_template('index.html', 
                          app_name="SaturdayMorningPlex",
                          timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -75,6 +143,7 @@ def info():
 @app.route('/api/plex/test', methods=['POST'])
 def test_plex_connection():
     """Test Plex connection with provided or stored credentials"""
+    logger.info("Testing Plex connection")
     try:
         data = request.get_json() or {}
         
@@ -84,6 +153,8 @@ def test_plex_connection():
         username = data.get('plex_username', PLEX_USERNAME)
         password = data.get('plex_password', PLEX_PASSWORD)
         servername = data.get('plex_servername', PLEX_SERVER_NAME)
+        
+        logger.debug(f"Connection method: {'Direct' if (url and token) else 'MyPlex Account'}")
         
         # Create connection
         conn = PlexConnection(
@@ -95,10 +166,14 @@ def test_plex_connection():
         )
         
         result = conn.test_connection()
+        if result.get('success'):
+            logger.info(f"Plex connection successful: {result.get('server_name')}")
+        else:
+            logger.error(f"Plex connection failed: {result.get('error')}")
         return jsonify(result)
         
     except Exception as e:
-        logger.error(f"Plex connection test failed: {e}")
+        logger.error(f"Plex connection test failed: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
@@ -107,9 +182,11 @@ def test_plex_connection():
 @app.route('/api/plex/libraries')
 def get_plex_libraries():
     """Get available Plex library sections"""
+    logger.info("Fetching Plex library sections")
     try:
         global plex_conn
         if not plex_conn:
+            logger.debug("Initializing new Plex connection")
             plex_conn = PlexConnection(
                 baseurl=PLEX_URL if PLEX_URL else None,
                 token=PLEX_TOKEN if PLEX_TOKEN else None,
@@ -120,6 +197,7 @@ def get_plex_libraries():
             plex_conn.connect()
         
         sections = plex_conn.plex.library.sections()
+        logger.info(f"Found {len(sections)} library sections")
         return jsonify({
             'success': True,
             'libraries': [
@@ -132,7 +210,7 @@ def get_plex_libraries():
             ]
         })
     except Exception as e:
-        logger.error(f"Failed to get libraries: {e}")
+        logger.error(f"Failed to get libraries: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
@@ -141,9 +219,11 @@ def get_plex_libraries():
 @app.route('/api/plex/content-ratings')
 def get_content_ratings():
     """Get available content ratings from TV library"""
+    logger.info("Fetching available content ratings")
     try:
         global plex_conn
         if not plex_conn:
+            logger.debug("Initializing new Plex connection")
             plex_conn = PlexConnection(
                 baseurl=PLEX_URL if PLEX_URL else None,
                 token=PLEX_TOKEN if PLEX_TOKEN else None,
@@ -153,6 +233,7 @@ def get_content_ratings():
             )
             plex_conn.connect()
         
+        logger.debug(f"Fetching TV section: {TV_LIBRARY_NAME}")
         tv_section = plex_conn.get_tv_section(TV_LIBRARY_NAME)
         
         # Get all unique content ratings
@@ -161,12 +242,14 @@ def get_content_ratings():
             if show.contentRating:
                 ratings.add(show.contentRating)
         
+        logger.info(f"Found {len(ratings)} unique content ratings")
+        
         return jsonify({
             'success': True,
             'ratings': sorted(list(ratings))
         })
     except Exception as e:
-        logger.error(f"Failed to get content ratings: {e}")
+        logger.error(f"Failed to get content ratings: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
@@ -175,6 +258,7 @@ def get_content_ratings():
 @app.route('/api/playlists/generate', methods=['POST'])
 def generate_playlists():
     """Generate Saturday Morning playlists"""
+    logger.info("Playlist generation requested")
     try:
         data = request.get_json() or {}
         
@@ -187,9 +271,13 @@ def generate_playlists():
         playlist_prefix = data.get('playlist_prefix', 'Saturday Morning')
         weeks_per_year = int(data.get('weeks_per_year', 52))
         
+        logger.info(f"Generation parameters: library={tv_library}, ratings={content_ratings}, "
+                   f"prefix='{playlist_prefix}', weeks={weeks_per_year}")
+        
         # Initialize connection if needed
         global plex_conn
         if not plex_conn:
+            logger.debug("Initializing new Plex connection")
             plex_conn = PlexConnection(
                 baseurl=PLEX_URL if PLEX_URL else None,
                 token=PLEX_TOKEN if PLEX_TOKEN else None,
@@ -200,6 +288,7 @@ def generate_playlists():
             plex_conn.connect()
         
         # Generate playlists
+        logger.info("Initializing PlaylistGenerator")
         generator = PlaylistGenerator(plex_conn)
         result = generator.generate_all_playlists(
             tv_section_name=tv_library,
@@ -207,6 +296,11 @@ def generate_playlists():
             playlist_prefix=playlist_prefix,
             weeks_per_year=weeks_per_year
         )
+        
+        if result.get('success'):
+            logger.info(f"Playlist generation complete: {result.get('playlists_created')} playlists created")
+        else:
+            logger.error(f"Playlist generation failed: {result.get('error')}")
         
         return jsonify(result)
         
@@ -220,11 +314,14 @@ def generate_playlists():
 @app.route('/api/playlists/summary')
 def get_playlists_summary():
     """Get summary of existing playlists"""
+    logger.info("Fetching playlist summary")
     try:
         playlist_prefix = request.args.get('prefix', 'Saturday Morning')
+        logger.debug(f"Searching for playlists with prefix: {playlist_prefix}")
         
         global plex_conn
         if not plex_conn:
+            logger.debug("Initializing new Plex connection")
             plex_conn = PlexConnection(
                 baseurl=PLEX_URL if PLEX_URL else None,
                 token=PLEX_TOKEN if PLEX_TOKEN else None,
@@ -237,10 +334,13 @@ def get_playlists_summary():
         generator = PlaylistGenerator(plex_conn)
         result = generator.get_playlist_summary(playlist_prefix)
         
+        if result.get('success'):
+            logger.info(f"Found {result.get('total_playlists', 0)} playlists")
+        
         return jsonify(result)
         
     except Exception as e:
-        logger.error(f"Failed to get playlist summary: {e}")
+        logger.error(f"Failed to get playlist summary: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
@@ -249,12 +349,15 @@ def get_playlists_summary():
 @app.route('/api/playlists/delete', methods=['POST'])
 def delete_playlists():
     """Delete all Saturday Morning playlists"""
+    logger.info("Playlist deletion requested")
     try:
         data = request.get_json() or {}
         playlist_prefix = data.get('playlist_prefix', 'Saturday Morning')
+        logger.warning(f"Deleting all playlists with prefix: {playlist_prefix}")
         
         global plex_conn
         if not plex_conn:
+            logger.debug("Initializing new Plex connection")
             plex_conn = PlexConnection(
                 baseurl=PLEX_URL if PLEX_URL else None,
                 token=PLEX_TOKEN if PLEX_TOKEN else None,
@@ -267,10 +370,13 @@ def delete_playlists():
         generator = PlaylistGenerator(plex_conn)
         result = generator.delete_all_playlists(playlist_prefix)
         
+        if result.get('success'):
+            logger.info(f"Deleted {result.get('deleted_count', 0)} playlists")
+        
         return jsonify(result)
         
     except Exception as e:
-        logger.error(f"Failed to delete playlists: {e}")
+        logger.error(f"Failed to delete playlists: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
@@ -278,4 +384,8 @@ def delete_playlists():
 
 if __name__ == '__main__':
     logger.info(f"Starting SaturdayMorningPlex on {APP_HOST}:{APP_PORT}")
+    logger.info(f"Plex configured: {bool(PLEX_URL and PLEX_TOKEN) or bool(PLEX_USERNAME and PLEX_PASSWORD)}")
+    logger.info(f"TV Library: {TV_LIBRARY_NAME}")
+    logger.info(f"Content Ratings: {','.join(CONTENT_RATINGS)}")
+    logger.debug("Starting Flask application...")
     app.run(host=APP_HOST, port=APP_PORT, debug=False)

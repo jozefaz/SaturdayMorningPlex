@@ -75,6 +75,39 @@ All config via env vars (12-factor app):
 
 **Never hardcode** Plex credentials or library names.
 
+### 6. Logging System - Docker & UnRAID Compatible
+```python
+# app.py: setup_logging() - Dual output configuration
+def setup_logging():
+    # Console handler (stdout) - Docker logs
+    console_handler = logging.StreamHandler(sys.stdout)
+    
+    # File handler - UnRAID persistent logs  
+    log_file = os.path.join(LOG_DIR, 'saturdaymorningplex.log')
+    file_handler = RotatingFileHandler(log_file, maxBytes=10MB, backupCount=5)
+```
+
+**Log Levels** (configured via `LOG_LEVEL` env var):
+- `DEBUG`: Detailed tracing (connection details, API calls, algorithm steps)
+- `INFO`: General operations (playlist generation, Plex connections, summaries)
+- `WARNING`: Non-critical issues (fallback behaviors, missing optional config)
+- `ERROR`: Failures requiring attention (auth errors, API failures, exceptions)
+
+**Logging Pattern**:
+```python
+logger.info(f"Starting operation: {param1}, {param2}")  # Start of operation
+logger.debug(f"Detailed context: {internal_state}")      # Debug details
+logger.error(f"Failed: {e}", exc_info=True)              # Always include traceback
+```
+
+**Docker Logs**: Use `docker logs <container>` or `docker-compose logs -f` to view real-time logs.
+
+**UnRAID Logs**: View in UnRAID web UI (Docker tab → container → Logs) or persistent file at `/mnt/user/appdata/saturdaymorningplex/config/logs/saturdaymorningplex.log`.
+
+**Log Rotation**: Automatic rotation at 10MB with 5 backup files (total 50MB max).
+
+**Critical**: All log output goes to stdout (Docker-compatible). File logging is supplementary for UnRAID persistence.
+
 ## Key Files & Responsibilities
 
 - **app.py**: Flask routes, env loading, global connection state
