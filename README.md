@@ -15,6 +15,8 @@ Automatically generate Saturday morning cartoon-style weekly playlists for your 
 - ✅ **Content Validation** - Verifies selected ratings exist in your library before generating
 - 🔁 **Smart Playlist Replacement** - Detects and replaces incomplete/outdated playlists
 - ⏱️ **Duration Display** - Shows total playlist duration in minutes
+- 📊 **Aggregate Statistics** - Shows comprehensive stats after generation (episode counts, runtime, rating breakdown, top shows)
+- 🌙 **Dark Mode** - Toggle between light and dark themes with persistent preference
 - 🐳 **Docker & UnRAID Ready** - Easy deployment with Docker or UnRAID
 - 🌐 **Modern Web Interface** - Interactive UI with real-time feedback
 
@@ -54,6 +56,29 @@ The generator creates:
 
 Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
 
+### Statistics Output
+
+After generation, detailed statistics are logged:
+
+```
+Shows processed: 33
+Total episodes distributed: 1,734
+Average episodes per show: 52.5
+Total runtime: 616.9 hours (25.7 days)
+Years generated: 1
+Playlists created: 52
+Average episodes per playlist: 33.3
+
+Content Rating Breakdown:
+  TV-Y: 65.9% (1,143 episodes)
+  TV-G: 34.1% (591 episodes)
+
+Top 10 Shows by Episode Count:
+  1. Show A: 156 episodes
+  2. Show B: 143 episodes
+  ...
+```
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -62,43 +87,45 @@ Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
 - Docker or UnRAID server
 - Plex authentication token (see [Getting Your Plex Token](#getting-your-plex-token))
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Run (Recommended)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/jozefaz/SaturdayMorningPlex.git
-   cd SaturdayMorningPlex
-   ```
+```bash
+docker run -d \
+  --name saturdaymorningplex \
+  -p 5000:5000 \
+  -e PLEX_URL=http://192.168.1.100:32400 \
+  -e PLEX_TOKEN=your_token_here \
+  -e TV_LIBRARY_NAME="TV Shows" \
+  -e CONTENT_RATINGS="G,PG" \
+  -e TZ=UTC \
+  -v /path/to/config:/config \
+  ghcr.io/jozefaz/saturdaymorningplex:latest
+```
 
-2. **Configure your settings** (choose one method):
+### Option 2: Docker Compose
 
-   **Method A: Using .env file (Recommended for local dev/testing)**
-   ```bash
-   # Copy the example file
-   cp .env.example .env
-   
-   # Edit .env with your settings
-   nano .env  # or use your preferred editor
-   ```
-   
-   Update these values in `.env`:
-   ```bash
-   PLEX_URL=http://192.168.1.100:32400  # Your Plex server URL
-   PLEX_TOKEN=your_token_here            # Your Plex token
-   TV_LIBRARY_NAME=TV Shows              # Your TV library name
-   CONTENT_RATINGS=G,PG                  # Desired content ratings
-   ```
-
-   **Method B: Edit docker-compose.yml directly**
+1. **Create docker-compose.yml**
    ```yaml
-   environment:
-     - PLEX_URL=http://192.168.1.100:32400
-     - PLEX_TOKEN=your_token_here
-     - TV_LIBRARY_NAME=TV Shows
-     - CONTENT_RATINGS=G,PG
+   version: '3.8'
+   services:
+     saturdaymorningplex:
+       image: ghcr.io/jozefaz/saturdaymorningplex:latest
+       container_name: saturdaymorningplex
+       ports:
+         - "5000:5000"
+       environment:
+         - PLEX_URL=http://192.168.1.100:32400
+         - PLEX_TOKEN=your_token_here
+         - TV_LIBRARY_NAME=TV Shows
+         - CONTENT_RATINGS=G,PG
+         - TZ=UTC
+         - LOG_LEVEL=INFO
+       volumes:
+         - /path/to/config:/config
+       restart: unless-stopped
    ```
 
-3. **Start the container**
+2. **Start the container**
    ```bash
    docker-compose up -d
    ```
@@ -106,27 +133,23 @@ Result: **3 years × 52 weeks = 156 playlists** covering all 117 episodes!
 4. **Access the web interface**
    - Open: `http://your-server-ip:5000`
 
-### Option 2: UnRAID
+### Option 3: UnRAID
 
-See [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md) for detailed UnRAID installation instructions.
+**Quick Install:**
+1. Go to Docker tab → Add Container
+2. Click "Template repositories" and add:
+   ```
+   https://raw.githubusercontent.com/jozefaz/SaturdayMorningPlex/main/unraid-template.xml
+   ```
+3. Select "SaturdayMorningPlex" from the template list
+4. Fill in your Plex URL and Token
+5. Click Apply
+
+See [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md) for detailed instructions.
 
 ## 🔧 Configuration
 
-### Using .env File (Recommended)
-
-The `.env` file stores your configuration persistently - similar to how UnRAID saves container settings. This file is git-ignored, so your credentials stay private.
-
-**Setup:**
-```bash
-cp .env.example .env
-# Edit .env with your actual values
-```
-
-**Benefits:**
-- ✅ Settings persist across restarts
-- ✅ No need to edit docker-compose.yml
-- ✅ Safe for version control (git-ignored)
-- ✅ Easy to manage multiple environments
+**Note**: Most users should use the web interface to configure libraries and content ratings dynamically. Environment variables are only needed for initial Plex connection.
 
 ### Environment Variables
 
@@ -139,10 +162,12 @@ cp .env.example .env
 | `PLEX_SERVER_NAME` | No | - | Server name (required if using username/password) |
 | `TV_LIBRARY_NAME` | No | `TV Shows` | Name of your TV Shows library in Plex |
 | `CONTENT_RATINGS` | No | `G,PG` | Comma-separated content ratings to include |
-| `APP_PORT` | No | `5000` | Port for web interface |
-| `TZ` | No | `America/New_York` | Timezone for container |
+| `TZ` | No | `UTC` | Timezone for container |
+| `LOG_LEVEL` | No | `INFO` | Logging detail: DEBUG, INFO, WARNING, ERROR |
 
 \* Use either `PLEX_URL` + `PLEX_TOKEN` OR `PLEX_USERNAME` + `PLEX_PASSWORD` + `PLEX_SERVER_NAME`
+
+**Note**: `APP_PORT` and `APP_HOST` are internal settings (5000 and 0.0.0.0) and should not be changed.
 
 ### Getting Your Plex Token
 
