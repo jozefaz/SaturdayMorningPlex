@@ -22,10 +22,8 @@
   <DonateLink>https://www.paypal.com/</DonateLink>
   <Requires/>
   <Config Name="WebUI Port" Target="5000" Default="5000" Mode="tcp" Description="Port for accessing the web interface" Type="Port" Display="always" Required="true" Mask="false">5000</Config>
-  <Config Name="Timezone" Target="TZ" Default="America/New_York" Mode="" Description="Container timezone (e.g., America/New_York, Europe/London)" Type="Variable" Display="always" Required="false" Mask="false">America/New_York</Config>
-  <Config Name="App Port" Target="APP_PORT" Default="5000" Mode="" Description="Internal application port (usually leave as 5000)" Type="Variable" Display="advanced" Required="false" Mask="false">5000</Config>
-  <Config Name="App Host" Target="APP_HOST" Default="0.0.0.0" Mode="" Description="Application host binding (leave as 0.0.0.0)" Type="Variable" Display="advanced" Required="false" Mask="false">0.0.0.0</Config>
-  <Config Name="Plex Server URL" Target="PLEX_URL" Default="http://192.168.1.100:32400" Mode="" Description="Direct URL to your Plex server (e.g., http://192.168.1.100:32400)" Type="Variable" Display="always" Required="true" Mask="false">http://192.168.1.100:32400</Config>
+  <Config Name="Timezone" Target="TZ" Default="UTC" Mode="" Description="Container timezone (e.g., UTC, America/New_York, Europe/London)" Type="Variable" Display="always" Required="false" Mask="false">UTC</Config>
+  <Config Name="Plex Server URL" Target="PLEX_URL" Default="" Mode="" Description="Direct URL to your Plex server (e.g., http://192.168.1.100:32400)" Type="Variable" Display="always" Required="true" Mask="false"></Config>
   <Config Name="Plex Token" Target="PLEX_TOKEN" Default="" Mode="" Description="Plex authentication token (see documentation for how to get this)" Type="Variable" Display="always" Required="true" Mask="true"></Config>
   <Config Name="TV Library Name" Target="TV_LIBRARY_NAME" Default="TV Shows" Mode="" Description="Name of your Plex TV Shows library section" Type="Variable" Display="always" Required="false" Mask="false">TV Shows</Config>
   <Config Name="Content Ratings" Target="CONTENT_RATINGS" Default="G,PG" Mode="" Description="Comma-separated content ratings to include (e.g., G,PG,TV-Y,TV-Y7)" Type="Variable" Display="always" Required="false" Mask="false">G,PG</Config>
