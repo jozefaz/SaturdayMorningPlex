@@ -1,0 +1,39 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#4A90E2"/>
+  
+  <!-- TV body -->
+  <rect x="100" y="140" width="312" height="220" rx="15" fill="#2C3E50"/>
+  <rect x="115" y="155" width="282" height="190" rx="8" fill="#34495E"/>
+  
+  <!-- TV screen -->
+  <rect x="130" y="170" width="252" height="160" rx="5" fill="#E8F4F8"/>
+  
+  <!-- Screen content - cartoon sunrise -->
+  <circle cx="256" cy="220" r="35" fill="#FFD700"/>
+  <path d="M 200 260 Q 256 240 312 260" stroke="#FF6B6B" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M 180 280 Q 256 255 332 280" stroke="#4ECDC4" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Play button overlay -->
+  <circle cx="256" cy="250" r="30" fill="#FF6B6B" opacity="0.9"/>
+  <path d="M 248 235 L 248 265 L 270 250 Z" fill="white"/>
+  
+  <!-- TV antenna -->
+  <line x1="256" y1="140" x2="220" y2="90" stroke="#34495E" stroke-width="6" stroke-linecap="round"/>
+  <line x1="256" y1="140" x2="292" y2="90" stroke="#34495E" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="220" cy="90" r="8" fill="#E74C3C"/>
+  <circle cx="292" cy="90" r="8" fill="#E74C3C"/>
+  
+  <!-- TV controls -->
+  <circle cx="350" cy="180" r="8" fill="#95A5A6"/>
+  <circle cx="350" cy="205" r="8" fill="#95A5A6"/>
+  <circle cx="350" cy="230" r="8" fill="#95A5A6"/>
+  
+  <!-- TV legs -->
+  <rect x="150" y="360" width="50" height="15" rx="3" fill="#2C3E50"/>
+  <rect x="312" y="360" width="50" height="15" rx="3" fill="#2C3E50"/>
+  
+  <!-- Saturday morning text banner -->
+  <rect x="100" y="390" width="312" height="50" rx="10" fill="#FF6B6B"/>
+  <text x="256" y="422" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="white" text-anchor="middle">SATURDAY</text>
+</svg>
