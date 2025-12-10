@@ -5,6 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ app_name }}</title>
     <style>
+        :root {
+            --bg-gradient-start: #667eea;
+            --bg-gradient-end: #764ba2;
+            --container-bg: white;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --section-bg: #f8f9fa;
+            --input-border: #ddd;
+            --input-bg: white;
+            --info-bg: #e3f2fd;
+            --success-bg: #e8f5e9;
+            --error-bg: #ffebee;
+            --playlist-item-border: #eee;
+        }
+        
+        body.dark-mode {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --container-bg: #0f3460;
+            --text-primary: #e8e8e8;
+            --text-secondary: #b0b0b0;
+            --section-bg: #1a2332;
+            --input-border: #2d3748;
+            --input-bg: #1a2332;
+            --info-bg: #1e3a5f;
+            --success-bg: #1e3a2f;
+            --error-bg: #3a1e1e;
+            --playlist-item-border: #2d3748;
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -12,29 +42,51 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             min-height: 100vh;
             padding: 20px;
+            transition: background 0.3s ease;
         }
         .container {
             max-width: 1000px;
             margin: 0 auto;
-            background: white;
+            background: var(--container-bg);
             border-radius: 20px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            transition: background 0.3s ease;
+            position: relative;
+        }
+        .dark-mode-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+        .dark-mode-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
         }
         h1 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 10px;
             font-size: 2.5em;
             text-align: center;
+            transition: color 0.3s ease;
         }
         .subtitle {
             text-align: center;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 30px;
             font-size: 1.1em;
+            transition: color 0.3s ease;
         }
         .status {
             background: {% if plex_configured %}#4CAF50{% else %}#ff9800{% endif %};
@@ -46,10 +98,11 @@
             font-weight: bold;
         }
         .section {
-            background: #f8f9fa;
+            background: var(--section-bg);
             padding: 25px;
             border-radius: 10px;
             margin: 20px 0;
+            transition: background 0.3s ease;
         }
         .section h2 {
             color: #667eea;
@@ -62,15 +115,19 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #333;
+            color: var(--text-primary);
             font-weight: 600;
+            transition: color 0.3s ease;
         }
         .form-group input, .form-group select {
             width: 100%;
             padding: 10px;
-            border: 2px solid #ddd;
+            border: 2px solid var(--input-border);
             border-radius: 5px;
             font-size: 1em;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .form-group input:focus, .form-group select:focus {
             outline: none;
@@ -78,8 +135,9 @@
         }
         .form-group .help-text {
             font-size: 0.9em;
-            color: #666;
+            color: var(--text-secondary);
             margin-top: 5px;
+            transition: color 0.3s ease;
         }
         button {
             background: #667eea;
@@ -113,25 +171,31 @@
             background: #5a6268;
         }
         .info-box {
-            background: #e3f2fd;
+            background: var(--info-bg);
             border-left: 4px solid #2196f3;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .success-box {
-            background: #e8f5e9;
+            background: var(--success-bg);
             border-left: 4px solid #4caf50;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .error-box {
-            background: #ffebee;
+            background: var(--error-bg);
             border-left: 4px solid #f44336;
             padding: 15px;
             margin: 15px 0;
             border-radius: 5px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .loading {
             display: none;
@@ -161,15 +225,18 @@
         .features li {
             padding: 10px;
             margin: 5px 0;
-            background: white;
+            background: var(--container-bg);
             border-left: 4px solid #667eea;
             border-radius: 5px;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .timestamp {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 0.9em;
             text-align: center;
             margin-top: 20px;
+            transition: color 0.3s ease;
         }
         #result {
             margin-top: 20px;
@@ -177,14 +244,17 @@
         .playlist-list {
             max-height: 400px;
             overflow-y: auto;
-            background: white;
+            background: var(--input-bg);
             padding: 15px;
             border-radius: 5px;
             margin-top: 15px;
+            transition: background 0.3s ease;
         }
         .playlist-item {
             padding: 10px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--playlist-item-border);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
         }
         .playlist-item:last-child {
             border-bottom: none;
@@ -193,6 +263,10 @@
 </head>
 <body>
     <div class="container">
+        <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle Dark Mode">
+            <span id="darkModeIcon">🌙</span>
+        </button>
+        
         <h1>🎬 {{ app_name }}</h1>
         <div class="subtitle">Automated Saturday Morning Cartoon Playlist Generator</div>
         
@@ -848,6 +922,34 @@
                 console.error('Health check failed:', error);
             }
         }, 60000); // Every minute
+
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            const body = document.body;
+            const icon = document.getElementById('darkModeIcon');
+            
+            body.classList.toggle('dark-mode');
+            
+            // Update icon
+            if (body.classList.contains('dark-mode')) {
+                icon.textContent = '☀️';
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                icon.textContent = '🌙';
+                localStorage.setItem('darkMode', 'disabled');
+            }
+        }
+
+        // Load dark mode preference on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            const darkMode = localStorage.getItem('darkMode');
+            const icon = document.getElementById('darkModeIcon');
+            
+            if (darkMode === 'enabled') {
+                document.body.classList.add('dark-mode');
+                icon.textContent = '☀️';
+            }
+        });
     </script>
 </body>
 </html>
