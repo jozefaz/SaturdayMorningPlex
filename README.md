@@ -1,53 +1,27 @@
 # SaturdayMorningPlex
 
-Automatically generate Saturday morning cartoon-style weekly playlists for your Plex server!
+Recreate the Saturday morning cartoon experience with automated weekly playlists for your Plex server.
 
-## ✨ Features
+## Features
 
-- 🎬 **Automated Playlist Generation** - Creates 52 weekly playlists per year
-- 🎯 **Interactive Content Rating Selector** - Toggle buttons to select/deselect ratings (G, PG, TV-Y, etc.)
-- 📚 **Multi-Library Support** - Combine shows from multiple Plex libraries (e.g., "TV Shows, Anime, Kids")
-- 🎨 **Smart Quality Selection** - Automatically picks highest quality version when duplicates exist (bitrate → filesize → random)
-- 📅 **Air Date Sorting** - Episodes sorted chronologically for authentic viewing order
-- 📺 **Smart Distribution** - Each week gets one episode from each show (round-robin)
-- 🔄 **Multi-Season Support** - Automatically continues to next seasons
-- 📅 **Multi-Year Generation** - Creates playlists until all episodes are included
-- ✅ **Content Validation** - Verifies selected ratings exist in your library before generating
-- 🔁 **Smart Playlist Replacement** - Detects and replaces incomplete/outdated playlists
-- ⏱️ **Duration Display** - Shows total playlist duration in minutes
-- 📊 **Aggregate Statistics** - Shows comprehensive stats after generation (episode counts, runtime, rating breakdown, top shows)
-- 🌙 **Dark Mode** - Toggle between light and dark themes with persistent preference
-- 🐳 **Docker & UnRAID Ready** - Easy deployment with Docker or UnRAID
-- 🌐 **Modern Web Interface** - Interactive UI with real-time feedback
+- Creates 52 weekly playlists per year from your TV library
+- Toggle content ratings on/off (G, PG, TV-Y, etc.) via web interface
+- Handles multiple Plex libraries simultaneously
+- Picks highest quality versions when episodes exist in multiple places
+- Episodes play in air date order
+- Round-robin distribution - each week gets one episode from every show
+- Continues across seasons and years until all episodes are scheduled
+- Shows detailed statistics after generation
+- Dark mode with saved preference
+- Works on Docker and UnRAID
 
-## 🎯 How It Works
+## How It Works
 
-1. **Connect to Plex** - Authenticate with your Plex Media Server
-2. **Select Libraries** - Click "Load Available Libraries" to see all TV libraries, select one or multiple
-3. **Choose Content Ratings** - Click "Load Available Ratings" and toggle ratings on/off with interactive buttons
-4. **Generate Playlists** - Creates weekly playlists with smart features:
-   - **Air Date Sorting**: Episodes sorted chronologically (oldest first)
-   - **Round-Robin Distribution**: Week 1 gets episode 1 from all shows, Week 2 gets episode 2, etc.
-   - **Quality Selection**: When same episode exists in multiple libraries, automatically picks highest bitrate version
-   - **Multi-Season**: Automatically continues to next seasons when shows run out of episodes
-   - **Deduplication**: Prevents duplicate episodes across libraries
-5. **Multiple Years** - Continues creating years until all episodes are used
-6. **Smart Replacement** - Regenerating updates existing playlists intelligently
+Point it at your Plex server, pick some content ratings, and hit generate. The app creates a year's worth of weekly playlists using a simple algorithm: Week 1 gets the first episode from each show, Week 2 gets the second episode from each show, and so on. When shows have different episode counts, it keeps going until everything's scheduled.
 
-### Web Interface Features
+Example: 3 shows with 26, 39, and 52 episodes will create about 52 playlists (one year), with the longest show determining how many weeks you get.
 
-- **Interactive Content Rating Selector**: Click ratings to toggle them on/off (selected ratings show in blue with ✓)
-- **Multi-Library Selector**: Click "Select All TV Libraries" to include all libraries at once
-- **Real-Time Validation**: System checks if selected ratings exist before generating
-- **Live Status Updates**: Progress messages show what's happening during generation
-- **Playlist Summary**: View all existing playlists with episode counts and durations
-
-### Example Output
-
-If you have 3 shows with content rating "G":
-- Show A: 26 episodes (2 seasons, 13 each)
-- Show B: 39 episodes (3 seasons, 13 each)
-- Show C: 52 episodes (4 seasons, 13 each)
+After generation, check the logs for a breakdown: total episodes, runtime hours, rating percentages, and which shows contributed the most episodes.
 
 The generator creates:
 - **Year 1**: 52 weeks, each with 3 episodes (one from each show)
@@ -79,15 +53,9 @@ Top 10 Shows by Episode Count:
   ...
 ```
 
-## 🚀 Quick Start
+## Installation
 
-### Prerequisites
-
-- Plex Media Server with TV Shows library
-- Docker or UnRAID server
-- Plex authentication token (see [Getting Your Plex Token](#getting-your-plex-token))
-
-### Option 1: Docker Run (Recommended)
+### Docker
 
 ```bash
 docker run -d \
@@ -95,206 +63,103 @@ docker run -d \
   -p 5000:5000 \
   -e PLEX_URL=http://192.168.1.100:32400 \
   -e PLEX_TOKEN=your_token_here \
-  -e TV_LIBRARY_NAME="TV Shows" \
-  -e CONTENT_RATINGS="G,PG" \
-  -e TZ=UTC \
   -v /path/to/config:/config \
   ghcr.io/jozefaz/saturdaymorningplex:latest
 ```
 
-### Option 2: Docker Compose
+Or use docker-compose.yml:
 
-1. **Create docker-compose.yml**
-   ```yaml
-   version: '3.8'
-   services:
-     saturdaymorningplex:
-       image: ghcr.io/jozefaz/saturdaymorningplex:latest
-       container_name: saturdaymorningplex
-       ports:
-         - "5000:5000"
-       environment:
-         - PLEX_URL=http://192.168.1.100:32400
-         - PLEX_TOKEN=your_token_here
-         - TV_LIBRARY_NAME=TV Shows
-         - CONTENT_RATINGS=G,PG
-         - TZ=UTC
-         - LOG_LEVEL=INFO
-       volumes:
-         - /path/to/config:/config
-       restart: unless-stopped
-   ```
+```yaml
+services:
+  saturdaymorningplex:
+    image: ghcr.io/jozefaz/saturdaymorningplex:latest
+    container_name: saturdaymorningplex
+    ports:
+      - "5000:5000"
+    environment:
+      - PLEX_URL=http://192.168.1.100:32400
+      - PLEX_TOKEN=your_token_here
+      - TZ=UTC
+    volumes:
+      - /path/to/config:/config
+    restart: unless-stopped
+```
 
-2. **Start the container**
-   ```bash
-   docker-compose up -d
-   ```
+Then: `docker-compose up -d`
 
-4. **Access the web interface**
-   - Open: `http://your-server-ip:5000`
+Access at `http://your-server-ip:5000`
 
-### Option 3: UnRAID
+### UnRAID
 
-**Quick Install:**
-1. Go to Docker tab → Add Container
-2. Click "Template repositories" and add:
-   ```
-   https://raw.githubusercontent.com/jozefaz/SaturdayMorningPlex/main/unraid-template.xml
-   ```
-3. Select "SaturdayMorningPlex" from the template list
-4. Fill in your Plex URL and Token
-5. Click Apply
+In the Docker tab, click "Add Container" → "Template repositories" and add:
+```
+https://raw.githubusercontent.com/jozefaz/SaturdayMorningPlex/main/unraid-template.xml
+```
 
-See [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md) for detailed instructions.
+Select SaturdayMorningPlex from the list, fill in your Plex URL and token, then hit Apply.
 
-## 🔧 Configuration
+For more details: [UNRAID_DEPLOYMENT.md](UNRAID_DEPLOYMENT.md)
 
-**Note**: Most users should use the web interface to configure libraries and content ratings dynamically. Environment variables are only needed for initial Plex connection.
+## Configuration
 
-### Environment Variables
+The web interface handles library selection and content ratings - you don't need to set those via environment variables. Just provide your Plex connection details:
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `PLEX_URL` | Yes* | - | Direct URL to Plex server (e.g., `http://192.168.1.100:32400`) |
-| `PLEX_TOKEN` | Yes* | - | Plex authentication token |
-| `PLEX_USERNAME` | Yes** | - | MyPlex email (alternative to token) |
-| `PLEX_PASSWORD` | Yes** | - | MyPlex password (alternative to token) |
-| `PLEX_SERVER_NAME` | No | - | Server name (required if using username/password) |
-| `TV_LIBRARY_NAME` | No | `TV Shows` | Name of your TV Shows library in Plex |
-| `CONTENT_RATINGS` | No | `G,PG` | Comma-separated content ratings to include |
-| `TZ` | No | `UTC` | Timezone for container |
-| `LOG_LEVEL` | No | `INFO` | Logging detail: DEBUG, INFO, WARNING, ERROR |
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `PLEX_URL` | Yes* | - | Your Plex server URL (e.g., `http://192.168.1.100:32400`) |
+| `PLEX_TOKEN` | Yes* | - | Authentication token from Plex |
+| `PLEX_USERNAME` | Yes** | - | MyPlex email (use instead of token) |
+| `PLEX_PASSWORD` | Yes** | - | MyPlex password (use instead of token) |
+| `PLEX_SERVER_NAME` | No | - | Required if using username/password |
+| `TV_LIBRARY_NAME` | No | `TV Shows` | Default library name |
+| `CONTENT_RATINGS` | No | `G,PG` | Default ratings filter |
+| `TZ` | No | `UTC` | Container timezone |
+| `LOG_LEVEL` | No | `INFO` | DEBUG, INFO, WARNING, or ERROR |
 
-\* Use either `PLEX_URL` + `PLEX_TOKEN` OR `PLEX_USERNAME` + `PLEX_PASSWORD` + `PLEX_SERVER_NAME`
+\* Either use `PLEX_URL` + `PLEX_TOKEN` or `PLEX_USERNAME` + `PLEX_PASSWORD` + `PLEX_SERVER_NAME`
 
-**Note**: `APP_PORT` and `APP_HOST` are internal settings (5000 and 0.0.0.0) and should not be changed.
+The app runs on port 5000 internally - map it however you want with `-p` flag.
 
 ### Getting Your Plex Token
 
-**Method 1: From Plex Web App**
-1. Open Plex Web App
-2. Play any media item
-3. Click the three dots (...) → "Get Info"
-4. Click "View XML"
-5. Look in the URL for `X-Plex-Token=` - copy the value after it
+Open Plex Web App, play any media, click the three dots (⋯) → "Get Info" → "View XML". Look in the URL bar for `X-Plex-Token=` and copy everything after it.
 
-**Method 2: From Server Settings**
-1. Go to Settings → Server → Network
-2. Show Advanced
-3. The token is displayed there
+Or go to Settings → Server → Network → Show Advanced - the token is displayed there.
 
-**Method 3: Using curl**
+### Content Rating Filter
+
+The rating filter uses exact matches: `CONTENT_RATINGS=G` only includes G-rated shows, not PG or anything else. For multiple ratings, separate with commas: `G,PG,TV-Y,TV-Y7`
+
+This is intentional for parental control - no fuzzy matching or "G includes everything below PG-13" logic.
+
+## Logging
+
+View container logs:
 ```bash
-curl -u 'YOUR_EMAIL:YOUR_PASSWORD' 'https://plex.tv/users/sign_in.xml' \\
-  -X POST -H 'X-Plex-Client-Identifier: MyApp'
-```
-
-### Content Rating Examples
-
-- **G Only**: `CONTENT_RATINGS=G`
-- **PG Only**: `CONTENT_RATINGS=PG`
-- **G and PG**: `CONTENT_RATINGS=G,PG`
-- **TV-Y and TV-Y7**: `CONTENT_RATINGS=TV-Y,TV-Y7`
-- **Multiple**: `CONTENT_RATINGS=G,PG,TV-Y,TV-Y7,TV-G`
-
-**Note**: The filter is exact match only. If you set `PG`, it will ONLY include PG-rated shows, not G or PG-13.
-
-## 📊 Logging & Monitoring
-
-### Docker Logs
-
-View real-time logs from your container:
-```bash
-# Follow logs (live view)
 docker logs -f saturdaymorningplex
-
-# View last 100 lines
 docker logs --tail 100 saturdaymorningplex
-
-# Using docker-compose
-docker-compose logs -f
 ```
 
-### UnRAID Logs
+For UnRAID: Docker tab → container → Logs button, or check `/mnt/user/appdata/saturdaymorningplex/config/logs/`
 
-1. **Web UI**: Docker tab → SaturdayMorningPlex → Logs button
-2. **Persistent Logs**: Access log file at `/mnt/user/appdata/saturdaymorningplex/config/logs/saturdaymorningplex.log`
+Set `LOG_LEVEL=DEBUG` for detailed output. Logs auto-rotate at 10MB and keep 5 backups (50MB total).
 
-### Log Levels
+## Usage
 
-Configure logging detail via `LOG_LEVEL` environment variable:
+Navigate to `http://your-server-ip:5000` and:
 
-- `ERROR` - Only errors (minimal logging)
-- `WARNING` - Warnings and errors
-- `INFO` - General operations (default, recommended)
-- `DEBUG` - Detailed tracing (for troubleshooting)
+1. Test your Plex connection with the button
+2. Load available libraries and select one or more
+3. Load available ratings and toggle the ones you want
+4. Hit Generate and wait (large libraries take a few minutes)
+5. Check your Plex server for the new playlists
 
-**Example docker-compose.yml:**
-```yaml
-environment:
-  - LOG_LEVEL=DEBUG  # Enable detailed logging
-```
+The interface shows progress and will display statistics when done. Regenerating updates existing playlists rather than creating duplicates.
 
-### Log Rotation
+## License
 
-- Log files automatically rotate at **10MB**
-- Keeps **5 backup files** (50MB total maximum)
-- Prevents disk space issues on long-running containers
-
-### What Gets Logged
-
-- **INFO**: Plex connections, playlist generation progress, summary statistics
-- **DEBUG**: Detailed API calls, show filtering, episode distribution steps
-- **WARNING**: Fallback behaviors, missing configuration
-- **ERROR**: Authentication failures, API errors, playlist creation failures
-
-### Troubleshooting with Logs
-
-**Connection Issues:**
-```bash
-docker logs saturdaymorningplex | grep -i "connection"
-```
-
-**Playlist Generation:**
-```bash
-docker logs saturdaymorningplex | grep -i "playlist"
-```
-
-**All Errors:**
-```bash
-docker logs saturdaymorningplex | grep -i "error"
-```
-
-## 📖 Usage
-
-### Web Interface
-
-1. **Access the Interface**
-   - Navigate to `http://your-server-ip:5000`
-
-2. **Test Connection**
-   - Click "Test Plex Connection" to verify your Plex server is accessible
-
-3. **Configure Content Ratings**
-   - Enter desired content ratings (comma-separated)
-   - Click "Load Available Ratings" to see what's in your library
-
-4. **Generate Playlists**
-   - Click "Generate Playlists"
-   - Wait for processing (may take a few minutes for large libraries)
-   - View the results
-
-5. **View/Delete Playlists**
-   - Use the interface to manage your generated playlists
-
-## 🤝 Contributing
-
-Contributions are welcome! Issues and PRs at: https://github.com/jozefaz/SaturdayMorningPlex
-
-## 📝 License
-
-MIT License
+MIT
 
 ---
 
-**Made with ❤️ for Saturday morning cartoon lovers everywhere!**
+Made for Saturday morning cartoon nostalgia.
