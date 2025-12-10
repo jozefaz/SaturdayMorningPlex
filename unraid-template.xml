@@ -3,7 +3,7 @@
   <Name>SaturdayMorningPlex</Name>
   <Repository>ghcr.io/jozefaz/saturdaymorningplex:latest</Repository>
   <Registry>https://github.com/jozefaz/SaturdayMorningPlex/pkgs/container/saturdaymorningplex</Registry>
-  <Network>bridge</Network>
+  <Network>br0</Network>
   <MyIP/>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
