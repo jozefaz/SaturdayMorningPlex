@@ -132,6 +132,14 @@ The rating filter uses exact matches: `CONTENT_RATINGS=G` only includes G-rated 
 
 This is intentional for parental control - no fuzzy matching or "G includes everything below PG-13" logic.
 
+## Tests
+
+Run the unit tests (standard library only, no Plex server needed):
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 ## Logging
 
 View container logs:
